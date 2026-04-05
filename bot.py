@@ -5,15 +5,13 @@ from telegram.ext import (
     Application, CommandHandler, MessageHandler,
     filters, ContextTypes, ConversationHandler
 )
-from mistralai import Mistral
+import requests
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
-
-mistral = Mistral(api_key=MISTRAL_API_KEY)
 
 QUESTIONS = [
     "1️⃣ Что тебе больше нравится?\n\nА) Работать с людьми\nБ) Работать с техникой/компьютерами\nВ) Работать с природой/животными\nГ) Работать с текстами/творчеством",
@@ -99,11 +97,19 @@ async def analyze_and_respond(update: Update, context: ContextTypes.DEFAULT_TYPE
 Пиши тепло, на "ты", без занудства. Подросток должен почувствовать что его поняли."""
 
     try:
-        response = mistral.chat.complete(
-            model="mistral-large-latest",
-            messages=[{"role": "user", "content": prompt}]
+        response = requests.post(
+            "https://api.mistral.ai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {MISTRAL_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "mistral-large-latest",
+                "messages": [{"role": "user", "content": prompt}]
+            },
+            timeout=60
         )
-        result = response.choices[0].message.content
+        result = response.json()["choices"][0]["message"]["content"]
         await update.message.reply_text(result)
         await update.message.reply_text("🔄 Хочешь пройти тест заново? Напиши /start")
     except Exception as e:
