@@ -7,11 +7,12 @@ from telegram.ext import (
 )
 import requests
 
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 QUESTIONS = [
     "1️⃣ Что тебе больше нравится?\n\nА) Работать с людьми\nБ) Работать с техникой/компьютерами\nВ) Работать с природой/животными\nГ) Работать с текстами/творчеством",
@@ -98,13 +99,13 @@ async def analyze_and_respond(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     try:
         response = requests.post(
-            "https://api.mistral.ai/v1/chat/completions",
+            "https://api.groq.com/openai/v1/chat/completions",
             headers={
-                "Authorization": f"Bearer {MISTRAL_API_KEY}",
+                "Authorization": f"Bearer {GROQ_API_KEY}",
                 "Content-Type": "application/json"
             },
             json={
-                "model": "mistral-large-latest",
+                "model": "llama-3.3-70b-versatile",
                 "messages": [{"role": "user", "content": prompt}]
             },
             timeout=60
