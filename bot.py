@@ -5,7 +5,7 @@ from telegram.ext import (
     Application, CommandHandler, MessageHandler,
     filters, ContextTypes, ConversationHandler
 )
-from mistralai import Mistral
+from mistralai.client import MistralClient as Mistral
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -99,7 +99,7 @@ async def analyze_and_respond(update: Update, context: ContextTypes.DEFAULT_TYPE
 Пиши тепло, на "ты", без занудства. Подросток должен почувствовать что его поняли."""
 
     try:
-        response = mistral.chat.complete(
+        response = mistral.chat(
             model="mistral-large-latest",
             messages=[{"role": "user", "content": prompt}]
         )
