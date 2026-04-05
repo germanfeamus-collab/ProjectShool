@@ -119,7 +119,12 @@ async def analyze_and_respond(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
         result = response.json()["choices"][0]["message"]["content"]
         await update.message.reply_text(result)
-        await update.message.reply_text("🔄 Хочешь пройти тест заново? Напиши /start")
+        await update.message.reply_text(
+            "💬 Можешь спросить про любую профессию — отвечу честно, подходит тебе или нет.\n\n"
+            "Или напиши /start чтобы пройти тест заново."
+        )
+        context.user_data["chat_mode"] = True
+        context.user_data["profile_summary"] = result
     except Exception as e:
         logger.error(f"Mistral error: {e}")
         await update.message.reply_text(
@@ -127,7 +132,44 @@ async def analyze_and_respond(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
 
 
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.user_data.get("chat_mode"):
+        await update.message.reply_text("Напиши /start чтобы начать тест.")
+        return
+
+    question = update.message.text.strip()
+    profile = context.user_data.get("profile_summary", "")
+
+    prompt = f"""Ты профориентационный эксперт для школьников. Отвечай ТОЛЬКО на русском языке.
+
+Вот профиль этого подростка по результатам теста:
+{profile}
+
+Вопрос подростка: {question}
+
+Отвечай честно и прямо. Если профессия не подходит этому человеку — скажи это прямо, объясни почему, и предложи что подойдёт лучше. Не ври и не сюсюкай. Коротко, 3-5 предложений."""
+
+    try:
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "llama-3.3-70b-versatile",
+                "messages": [{"role": "user", "content": prompt}]
+            },
+            timeout=60
+        )
+        result = response.json()["choices"][0]["message"]["content"]
+        await update.message.reply_text(result)
+    except Exception as e:
+        logger.error(f"Groq error: {e}")
+        await update.message.reply_text("Что-то пошло не так. Попробуй ещё раз.")
+
+
+
     await update.message.reply_text(
         "Тест прерван. Напиши /start чтобы начать заново.",
         reply_markup=ReplyKeyboardRemove()
@@ -147,6 +189,7 @@ def main():
     )
 
     app.add_handler(conv_handler)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, free_chat))
     app.run_polling()
 
 
