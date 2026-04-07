@@ -17,34 +17,34 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 DB_FILE = "db.json"
 
-# \u0421\u043e\u0441\u0442\u043e\u044f\u043d\u0438\u044f \u043e\u0431\u044b\u0447\u043d\u043e\u0433\u043e \u0431\u043e\u0442\u0430
+# Состояния обычного бота
 (ASKING_CLASS, ASKING_REGION, ASKING_BUDGET, ASKING_TEST, FREE_CHAT) = range(5)
-# \u0421\u043e\u0441\u0442\u043e\u044f\u043d\u0438\u044f \u0430\u0434\u043c\u0438\u043d\u043a\u0438
+# Состояния админки
 (ADMIN_PASSWORD_INPUT, ADMIN_MENU, ADMIN_BROADCAST, ADMIN_BAN, ADMIN_CHAT,
  ADMIN_PROMPT_EDIT) = range(5, 11)
 
 QUESTIONS = [
-    "\u0427\u0442\u043e \u0442\u0435\u0431\u0435 \u0431\u043e\u043b\u044c\u0448\u0435 \u043d\u0440\u0430\u0432\u0438\u0442\u0441\u044f?\n\n\u0410) \u0420\u0430\u0431\u043e\u0442\u0430\u0442\u044c \u0441 \u043b\u044e\u0434\u044c\u043c\u0438\n\u0411) \u0420\u0430\u0431\u043e\u0442\u0430\u0442\u044c \u0441 \u0442\u0435\u0445\u043d\u0438\u043a\u043e\u0439/\u043a\u043e\u043c\u043f\u044c\u044e\u0442\u0435\u0440\u0430\u043c\u0438\n\u0412) \u0420\u0430\u0431\u043e\u0442\u0430\u0442\u044c \u0441 \u043f\u0440\u0438\u0440\u043e\u0434\u043e\u0439/\u0436\u0438\u0432\u043e\u0442\u043d\u044b\u043c\u0438\n\u0413) \u0420\u0430\u0431\u043e\u0442\u0430\u0442\u044c \u0441 \u0442\u0435\u043a\u0441\u0442\u0430\u043c\u0438/\u0442\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u043e\u043c",
-    "\u041a\u0430\u043a \u043f\u0440\u043e\u0432\u043e\u0434\u0438\u0448\u044c \u0441\u0432\u043e\u0431\u043e\u0434\u043d\u043e\u0435 \u0432\u0440\u0435\u043c\u044f?\n\n\u0410) \u041e\u0431\u0449\u0430\u044e\u0441\u044c \u0441 \u0434\u0440\u0443\u0437\u044c\u044f\u043c\u0438, \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0443\u044e \u043c\u0435\u0440\u043e\u043f\u0440\u0438\u044f\u0442\u0438\u044f\n\u0411) \u0418\u0433\u0440\u0430\u044e \u0432 \u0438\u0433\u0440\u044b, \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0438\u0440\u0443\u044e, \u0441\u043e\u0431\u0438\u0440\u0430\u044e \u0447\u0442\u043e-\u0442\u043e\n\u0412) \u041f\u0440\u043e\u0432\u043e\u0436\u0443 \u0432\u0440\u0435\u043c\u044f \u043d\u0430 \u043f\u0440\u0438\u0440\u043e\u0434\u0435, \u0437\u0430\u043d\u0438\u043c\u0430\u044e\u0441\u044c \u0441\u043f\u043e\u0440\u0442\u043e\u043c\n\u0413) \u0420\u0438\u0441\u0443\u044e, \u043f\u0438\u0448\u0443, \u0441\u043b\u0443\u0448\u0430\u044e \u043c\u0443\u0437\u044b\u043a\u0443",
-    "\u041a\u0430\u043a\u043e\u0439 \u043f\u0440\u0435\u0434\u043c\u0435\u0442 \u0434\u0430\u0451\u0442\u0441\u044f \u043b\u0435\u0433\u0447\u0435 \u0432\u0441\u0435\u0433\u043e?\n\n\u0410) \u0418\u0441\u0442\u043e\u0440\u0438\u044f, \u043e\u0431\u0449\u0435\u0441\u0442\u0432\u043e\u0437\u043d\u0430\u043d\u0438\u0435, \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430\n\u0411) \u041c\u0430\u0442\u0435\u043c\u0430\u0442\u0438\u043a\u0430, \u0444\u0438\u0437\u0438\u043a\u0430, \u0438\u043d\u0444\u043e\u0440\u043c\u0430\u0442\u0438\u043a\u0430\n\u0412) \u0411\u0438\u043e\u043b\u043e\u0433\u0438\u044f, \u0445\u0438\u043c\u0438\u044f, \u0433\u0435\u043e\u0433\u0440\u0430\u0444\u0438\u044f\n\u0413) \u0420\u0443\u0441\u0441\u043a\u0438\u0439 \u044f\u0437\u044b\u043a, \u0418\u0417\u041e, \u043c\u0443\u0437\u044b\u043a\u0430",
-    "\u041a\u0430\u043a\u0438\u043c \u0432\u0438\u0434\u0438\u0448\u044c \u0441\u0435\u0431\u044f \u0447\u0435\u0440\u0435\u0437 10 \u043b\u0435\u0442?\n\n\u0410) \u041f\u043e\u043c\u043e\u0433\u0430\u044e \u043b\u044e\u0434\u044f\u043c, \u0440\u0430\u0431\u043e\u0442\u0430\u044e \u0432 \u043a\u043e\u043c\u0430\u043d\u0434\u0435\n\u0411) \u0421\u043e\u0437\u0434\u0430\u044e \u0442\u0435\u0445\u043d\u043e\u043b\u043e\u0433\u0438\u0438, \u0440\u0435\u0448\u0430\u044e \u0441\u043b\u043e\u0436\u043d\u044b\u0435 \u0437\u0430\u0434\u0430\u0447\u0438\n\u0412) \u0420\u0430\u0431\u043e\u0442\u0430\u044e \u043d\u0430 \u0441\u0432\u0435\u0436\u0435\u043c \u0432\u043e\u0437\u0434\u0443\u0445\u0435, \u0437\u0430\u043d\u0438\u043c\u0430\u044e\u0441\u044c \u0438\u0441\u0441\u043b\u0435\u0434\u043e\u0432\u0430\u043d\u0438\u044f\u043c\u0438\n\u0413) \u0417\u0430\u043d\u0438\u043c\u0430\u044e\u0441\u044c \u0442\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u043e\u043c, \u0441\u043e\u0437\u0434\u0430\u044e \u0447\u0442\u043e-\u0442\u043e \u0443\u043d\u0438\u043a\u0430\u043b\u044c\u043d\u043e\u0435",
-    "\u0427\u0442\u043e \u0432\u0430\u0436\u043d\u0435\u0435 \u0432 \u0440\u0430\u0431\u043e\u0442\u0435?\n\n\u0410) \u041e\u0431\u0449\u0435\u043d\u0438\u0435 \u0438 \u043f\u043e\u043c\u043e\u0449\u044c \u0434\u0440\u0443\u0433\u0438\u043c\n\u0411) \u041b\u043e\u0433\u0438\u043a\u0430 \u0438 \u0442\u043e\u0447\u043d\u043e\u0441\u0442\u044c\n\u0412) \u0424\u0438\u0437\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0441\u0442\u044c \u0438 \u043f\u0440\u0438\u0440\u043e\u0434\u0430\n\u0413) \u0421\u0432\u043e\u0431\u043e\u0434\u0430 \u0438 \u0441\u0430\u043c\u043e\u0432\u044b\u0440\u0430\u0436\u0435\u043d\u0438\u0435",
-    "\u041a\u0430\u043a \u043f\u0440\u0438\u043d\u0438\u043c\u0430\u0435\u0448\u044c \u0440\u0435\u0448\u0435\u043d\u0438\u044f?\n\n\u0410) \u0421\u043e\u0432\u0435\u0442\u0443\u044e\u0441\u044c \u0441 \u0434\u0440\u0443\u0433\u0438\u043c\u0438, \u0443\u0447\u0438\u0442\u044b\u0432\u0430\u044e \u0447\u0443\u0432\u0441\u0442\u0432\u0430 \u043b\u044e\u0434\u0435\u0439\n\u0411) \u0410\u043d\u0430\u043b\u0438\u0437\u0438\u0440\u0443\u044e \u0444\u0430\u043a\u0442\u044b \u0438 \u043b\u043e\u0433\u0438\u0447\u0435\u0441\u043a\u0438 \u0440\u0430\u0437\u043c\u044b\u0448\u043b\u044f\u044e\n\u0412) \u0414\u043e\u0432\u0435\u0440\u044f\u044e \u0438\u043d\u0442\u0443\u0438\u0446\u0438\u0438 \u0438 \u043f\u0440\u0430\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u043e\u043c\u0443 \u043e\u043f\u044b\u0442\u0443\n\u0413) \u0421\u043b\u0443\u0448\u0430\u044e \u0441\u0432\u043e\u0451 \u0441\u0435\u0440\u0434\u0446\u0435 \u0438 \u0442\u0432\u043e\u0440\u0447\u0435\u0441\u043a\u0438\u0439 \u0438\u043c\u043f\u0443\u043b\u044c\u0441",
-    "\u041a\u0430\u043a\u043e\u0439 \u0442\u0438\u043f \u0437\u0430\u0434\u0430\u0447 \u043d\u0440\u0430\u0432\u0438\u0442\u0441\u044f?\n\n\u0410) \u041e\u0440\u0433\u0430\u043d\u0438\u0437\u043e\u0432\u044b\u0432\u0430\u0442\u044c \u043b\u044e\u0434\u0435\u0439 \u0438 \u043f\u0440\u043e\u0446\u0435\u0441\u0441\u044b\n\u0411) \u0420\u0435\u0448\u0430\u0442\u044c \u0442\u0435\u0445\u043d\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u0438 \u043c\u0430\u0442\u0435\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u0437\u0430\u0434\u0430\u0447\u0438\n\u0412) \u0418\u0441\u0441\u043b\u0435\u0434\u043e\u0432\u0430\u0442\u044c \u0438 \u044d\u043a\u0441\u043f\u0435\u0440\u0438\u043c\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c\n\u0413) \u0421\u043e\u0437\u0434\u0430\u0432\u0430\u0442\u044c \u0438 \u043f\u0440\u0438\u0434\u0443\u043c\u044b\u0432\u0430\u0442\u044c \u043d\u043e\u0432\u043e\u0435",
-    "\u0427\u0442\u043e \u0431\u043e\u043b\u044c\u0448\u0435 \u0432\u0441\u0435\u0433\u043e \u0440\u0430\u0437\u0434\u0440\u0430\u0436\u0430\u0435\u0442?\n\n\u0410) \u041a\u043e\u0433\u0434\u0430 \u043b\u044e\u0434\u0438 \u043d\u0435 \u043c\u043e\u0433\u0443\u0442 \u0434\u043e\u0433\u043e\u0432\u043e\u0440\u0438\u0442\u044c\u0441\u044f\n\u0411) \u041a\u043e\u0433\u0434\u0430 \u0447\u0442\u043e-\u0442\u043e \u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0442 \u043d\u0435\u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u043e \u0438 \u043d\u0435\u043f\u043e\u043d\u044f\u0442\u043d\u043e \u043f\u043e\u0447\u0435\u043c\u0443\n\u0412) \u041a\u043e\u0433\u0434\u0430 \u043f\u0440\u0438\u0445\u043e\u0434\u0438\u0442\u0441\u044f \u0441\u0438\u0434\u0435\u0442\u044c \u0432 \u043e\u0444\u0438\u0441\u0435 \u0432\u0435\u0441\u044c \u0434\u0435\u043d\u044c\n\u0413) \u041a\u043e\u0433\u0434\u0430 \u043d\u0435\u0442 \u043c\u0435\u0441\u0442\u0430 \u0434\u043b\u044f \u0442\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u0430 \u0438 \u0438\u043d\u0438\u0446\u0438\u0430\u0442\u0438\u0432\u044b",
+    "Что тебе больше нравится?\n\nА) Работать с людьми\nБ) Работать с техникой/компьютерами\nВ) Работать с природой/животными\nГ) Работать с текстами/творчеством",
+    "Как проводишь свободное время?\n\nА) Общаюсь с друзьями, организую мероприятия\nБ) Играю в игры, программирую, собираю что-то\nВ) Провожу время на природе, занимаюсь спортом\nГ) Рисую, пишу, слушаю музыку",
+    "Какой предмет даётся легче всего?\n\nА) История, обществознание, литература\nБ) Математика, физика, информатика\nВ) Биология, химия, география\nГ) Русский язык, ИЗО, музыка",
+    "Каким видишь себя через 10 лет?\n\nА) Помогаю людям, работаю в команде\nБ) Создаю технологии, решаю сложные задачи\nВ) Работаю на свежем воздухе, занимаюсь исследованиями\nГ) Занимаюсь творчеством, создаю что-то уникальное",
+    "Что важнее в работе?\n\nА) Общение и помощь другим\nБ) Логика и точность\nВ) Физическая активность и природа\nГ) Свобода и самовыражение",
+    "Как принимаешь решения?\n\nА) Советуюсь с другими, учитываю чувства людей\nБ) Анализирую факты и логически размышляю\nВ) Доверяю интуиции и практическому опыту\nГ) Слушаю своё сердце и творческий импульс",
+    "Какой тип задач нравится?\n\nА) Организовывать людей и процессы\nБ) Решать технические и математические задачи\nВ) Исследовать и экспериментировать\nГ) Создавать и придумывать новое",
+    "Что больше всего раздражает?\n\nА) Когда люди не могут договориться\nБ) Когда что-то работает неправильно и непонятно почему\nВ) Когда приходится сидеть в офисе весь день\nГ) Когда нет места для творчества и инициативы",
 ]
 
-DEFAULT_SYSTEM_PROMPT = """\u0422\u044b \u043f\u0440\u043e\u0444\u043e\u0440\u0438\u0435\u043d\u0442\u0430\u0446\u0438\u043e\u043d\u043d\u044b\u0439 \u044d\u043a\u0441\u043f\u0435\u0440\u0442 \u0434\u043b\u044f \u0448\u043a\u043e\u043b\u044c\u043d\u0438\u043a\u043e\u0432. \u041e\u0442\u0432\u0435\u0447\u0430\u0439 \u0422\u041e\u041b\u042c\u041a\u041e \u043d\u0430 \u0440\u0443\u0441\u0441\u043a\u043e\u043c \u044f\u0437\u044b\u043a\u0435.
+DEFAULT_SYSTEM_PROMPT = """Ты профориентационный эксперт для школьников. Отвечай ТОЛЬКО на русском языке.
 
-\u041f\u0440\u0430\u0432\u0438\u043b\u0430:
-- \u041e\u0442\u0432\u0435\u0447\u0430\u0439 \u0442\u043e\u043b\u044c\u043a\u043e \u043d\u0430 \u0432\u043e\u043f\u0440\u043e\u0441\u044b \u043f\u0440\u043e \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438, \u043e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435, \u043a\u0430\u0440\u044c\u0435\u0440\u0443 \u0438 \u0432\u044b\u0431\u043e\u0440 \u043f\u0443\u0442\u0438
-- \u0415\u0441\u043b\u0438 \u0432\u043e\u043f\u0440\u043e\u0441 \u043d\u0435 \u043f\u043e \u0442\u0435\u043c\u0435 \u2014 \u0432\u0435\u0436\u043b\u0438\u0432\u043e \u0441\u043a\u0430\u0436\u0438 \u0447\u0442\u043e \u0442\u044b \u0442\u043e\u043b\u044c\u043a\u043e \u043f\u0440\u043e \u043f\u0440\u043e\u0444\u043e\u0440\u0438\u0435\u043d\u0442\u0430\u0446\u0438\u044e
-- \u0411\u0443\u0434\u044c \u0447\u0435\u0441\u0442\u043d\u044b\u043c: \u0435\u0441\u043b\u0438 \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u044f \u043d\u0435 \u043f\u043e\u0434\u0445\u043e\u0434\u0438\u0442 \u2014 \u0441\u043a\u0430\u0436\u0438 \u043f\u0440\u044f\u043c\u043e \u0438 \u043e\u0431\u044a\u044f\u0441\u043d\u0438 \u043f\u043e\u0447\u0435\u043c\u0443
-- \u041d\u0430\u0437\u044b\u0432\u0430\u0439 \u0440\u0435\u0430\u043b\u044c\u043d\u044b\u0435 \u0443\u0447\u0435\u0431\u043d\u044b\u0435 \u0437\u0430\u0432\u0435\u0434\u0435\u043d\u0438\u044f
-- \u041a\u043e\u0440\u043e\u0442\u043a\u043e, 3-5 \u043f\u0440\u0435\u0434\u043b\u043e\u0436\u0435\u043d\u0438\u0439"""
+Правила:
+- Отвечай только на вопросы про профессии, образование, карьеру и выбор пути
+- Если вопрос не по теме — вежливо скажи что ты только про профориентацию
+- Будь честным: если профессия не подходит — скажи прямо и объясни почему
+- Называй реальные учебные заведения
+- Коротко, 3-5 предложений"""
 
 
-# ===== \u0411\u0414 (\u043f\u0440\u043e\u0441\u0442\u043e\u0439 JSON \u0444\u0430\u0439\u043b) =====
+# ===== БД (простой JSON файл) =====
 
 def load_db():
     if not os.path.exists(DB_FILE):
@@ -99,7 +99,7 @@ def set_system_prompt(prompt):
     save_db(db)
 
 
-# ===== \u0410\u041f\u0418 =====
+# ===== АПИ =====
 
 def ai_request(messages):
     response = requests.post(
@@ -117,24 +117,24 @@ def ai_request(messages):
     return response.json()["choices"][0]["message"]["content"]
 
 
-# ===== \u041e\u0411\u042b\u0427\u041d\u042b\u0419 \u0411\u041e\u0422 =====
+# ===== ОБЫЧНЫЙ БОТ =====
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     register_user(user.id, user.username or user.first_name)
 
     if is_banned(user.id):
-        await update.message.reply_text("\u0422\u044b \u0437\u0430\u0431\u043b\u043e\u043a\u0438\u0440\u043e\u0432\u0430\u043d.")
+        await update.message.reply_text("Ты заблокирован.")
         return ConversationHandler.END
 
     context.user_data.clear()
 
     await update.message.reply_text(
-        "\ud83d\udc4b \u041f\u0440\u0438\u0432\u0435\u0442! \u042f \u043f\u043e\u043c\u043e\u0433\u0443 \u0440\u0430\u0437\u043e\u0431\u0440\u0430\u0442\u044c\u0441\u044f \u0441 \u0432\u044b\u0431\u043e\u0440\u043e\u043c \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438.\n\n"
-        "\u041d\u0435\u0441\u043a\u043e\u043b\u044c\u043a\u043e \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432 \u043e \u0442\u0435\u0431\u0435, \u043f\u043e\u0442\u043e\u043c \u0442\u0435\u0441\u0442 \u0438\u0437 8 \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432 \u2014 \u0438 \u043f\u043e\u043b\u0443\u0447\u0438\u0448\u044c \u043f\u0435\u0440\u0441\u043e\u043d\u0430\u043b\u044c\u043d\u044b\u0439 \u0440\u0430\u0437\u0431\u043e\u0440.\n\n"
-        "\u0412 \u043a\u0430\u043a\u043e\u043c \u0442\u044b \u043a\u043b\u0430\u0441\u0441\u0435?",
+        "👋 Привет! Я помогу разобраться с выбором профессии.\n\n"
+        "Несколько вопросов о тебе, потом тест из 8 вопросов — и получишь персональный разбор.\n\n"
+        "В каком ты классе?",
         reply_markup=ReplyKeyboardMarkup(
-            [["8 \u043a\u043b\u0430\u0441\u0441", "9 \u043a\u043b\u0430\u0441\u0441"], ["10 \u043a\u043b\u0430\u0441\u0441", "11 \u043a\u043b\u0430\u0441\u0441"]],
+            [["8 класс", "9 класс"], ["10 класс", "11 класс"]],
             resize_keyboard=True, one_time_keyboard=True
         )
     )
@@ -144,7 +144,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def asking_class(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["grade"] = update.message.text.strip()
     await update.message.reply_text(
-        "\u0412 \u043a\u0430\u043a\u043e\u043c \u0433\u043e\u0440\u043e\u0434\u0435 \u0438\u043b\u0438 \u0440\u0435\u0433\u0438\u043e\u043d\u0435 \u0436\u0438\u0432\u0451\u0448\u044c?\n\n\u042d\u0442\u043e \u043d\u0443\u0436\u043d\u043e \u0447\u0442\u043e\u0431\u044b \u043f\u043e\u0434\u043e\u0431\u0440\u0430\u0442\u044c \u0443\u0447\u0435\u0431\u043d\u044b\u0435 \u0437\u0430\u0432\u0435\u0434\u0435\u043d\u0438\u044f \u0440\u044f\u0434\u043e\u043c.",
+        "В каком городе или регионе живёшь?\n\nЭто нужно чтобы подобрать учебные заведения рядом.",
         reply_markup=ReplyKeyboardRemove()
     )
     return ASKING_REGION
@@ -153,9 +153,9 @@ async def asking_class(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def asking_region(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["region"] = update.message.text.strip()
     await update.message.reply_text(
-        "\u0420\u0430\u0441\u0441\u043c\u0430\u0442\u0440\u0438\u0432\u0430\u0435\u0448\u044c \u043f\u043b\u0430\u0442\u043d\u043e\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435?",
+        "Рассматриваешь платное обучение?",
         reply_markup=ReplyKeyboardMarkup(
-            [["\u0422\u043e\u043b\u044c\u043a\u043e \u0431\u044e\u0434\u0436\u0435\u0442", "\u0413\u043e\u0442\u043e\u0432 \u043f\u043b\u0430\u0442\u0438\u0442\u044c"], ["\u0420\u0430\u0441\u0441\u043c\u043e\u0442\u0440\u044e \u043e\u0431\u0430 \u0432\u0430\u0440\u0438\u0430\u043d\u0442\u0430"]],
+            [["Только бюджет", "Готов платить"], ["Рассмотрю оба варианта"]],
             resize_keyboard=True, one_time_keyboard=True
         )
     )
@@ -168,17 +168,17 @@ async def asking_budget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["question_index"] = 0
 
     await update.message.reply_text(
-        "\u041e\u0442\u043b\u0438\u0447\u043d\u043e! \u0422\u0435\u043f\u0435\u0440\u044c \u0442\u0435\u0441\u0442 \u2014 8 \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432. \u041e\u0442\u0432\u0435\u0447\u0430\u0439 \u0447\u0435\u0441\u0442\u043d\u043e. \ud83c\udfaf",
-        reply_markup=ReplyKeyboardMarkup([["\u0410", "\u0411"], ["\u0412", "\u0413"]], resize_keyboard=True, one_time_keyboard=True)
+        "Отлично! Теперь тест — 8 вопросов. Отвечай честно. 🎯",
+        reply_markup=ReplyKeyboardMarkup([["А", "Б"], ["В", "Г"]], resize_keyboard=True, one_time_keyboard=True)
     )
-    await update.message.reply_text(f"1\ufe0f\u20e3 {QUESTIONS[0]}")
+    await update.message.reply_text(f"1️⃣ {QUESTIONS[0]}")
     return ASKING_TEST
 
 
 async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip().upper()
-    if text not in ["\u0410", "\u0411", "\u0412", "\u0413"]:
-        await update.message.reply_text("\u0412\u044b\u0431\u0435\u0440\u0438: \u0410, \u0411, \u0412 \u0438\u043b\u0438 \u0413")
+    if text not in ["А", "Б", "В", "Г"]:
+        await update.message.reply_text("Выбери: А, Б, В или Г")
         return ASKING_TEST
 
     context.user_data["answers"].append(text)
@@ -186,11 +186,11 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["question_index"] = index
 
     if index < len(QUESTIONS):
-        markup = ReplyKeyboardMarkup([["\u0410", "\u0411"], ["\u0412", "\u0413"]], resize_keyboard=True, one_time_keyboard=True)
-        await update.message.reply_text(f"{index + 1}\ufe0f\u20e3 {QUESTIONS[index]}", reply_markup=markup)
+        markup = ReplyKeyboardMarkup([["А", "Б"], ["В", "Г"]], resize_keyboard=True, one_time_keyboard=True)
+        await update.message.reply_text(f"{index + 1}️⃣ {QUESTIONS[index]}", reply_markup=markup)
         return ASKING_TEST
     else:
-        await update.message.reply_text("\u23f3 \u0410\u043d\u0430\u043b\u0438\u0437\u0438\u0440\u0443\u044e \u0442\u0432\u043e\u0438 \u043e\u0442\u0432\u0435\u0442\u044b...", reply_markup=ReplyKeyboardRemove())
+        await update.message.reply_text("⏳ Анализирую твои ответы...", reply_markup=ReplyKeyboardRemove())
         await analyze_and_respond(update, context)
         return FREE_CHAT
 
@@ -203,66 +203,66 @@ async def analyze_and_respond(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     pairs = []
     for i, (q, a) in enumerate(zip(QUESTIONS, answers)):
-        pairs.append(f"\u0412\u043e\u043f\u0440\u043e\u0441 {i+1}: {q}\n\u041e\u0442\u0432\u0435\u0442: {a}")
+        pairs.append(f"Вопрос {i+1}: {q}\nОтвет: {a}")
     answers_text = "\n\n".join(pairs)
 
-    prompt = f"""\u0422\u044b \u043f\u0440\u043e\u0444\u043e\u0440\u0438\u0435\u043d\u0442\u0430\u0446\u0438\u043e\u043d\u043d\u044b\u0439 \u044d\u043a\u0441\u043f\u0435\u0440\u0442 \u0434\u043b\u044f \u0448\u043a\u043e\u043b\u044c\u043d\u0438\u043a\u043e\u0432. \u041e\u0442\u0432\u0435\u0447\u0430\u0439 \u0422\u041e\u041b\u042c\u041a\u041e \u043d\u0430 \u0440\u0443\u0441\u0441\u043a\u043e\u043c \u044f\u0437\u044b\u043a\u0435, \u043d\u0438\u043a\u0430\u043a\u0438\u0445 \u0438\u043d\u043e\u0441\u0442\u0440\u0430\u043d\u043d\u044b\u0445 \u0441\u0438\u043c\u0432\u043e\u043b\u043e\u0432.
+    prompt = f"""Ты профориентационный эксперт для школьников. Отвечай ТОЛЬКО на русском языке, никаких иностранных символов.
 
-\u0414\u0430\u043d\u043d\u044b\u0435 \u043f\u043e\u0434\u0440\u043e\u0441\u0442\u043a\u0430:
-- \u041a\u043b\u0430\u0441\u0441: {grade}
-- \u0420\u0435\u0433\u0438\u043e\u043d: {region}
-- \u0411\u044e\u0434\u0436\u0435\u0442: {budget}
+Данные подростка:
+- Класс: {grade}
+- Регион: {region}
+- Бюджет: {budget}
 
-\u041e\u0442\u0432\u0435\u0442\u044b \u043d\u0430 \u0442\u0435\u0441\u0442:
+Ответы на тест:
 {answers_text}
 
-\u041d\u0430\u043f\u0438\u0448\u0438 \u0430\u043d\u0430\u043b\u0438\u0437 \u0441\u0442\u0440\u043e\u0433\u043e \u043f\u043e \u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0435, \u043a\u043e\u0440\u043e\u0442\u043a\u043e:
+Напиши анализ строго по структуре, коротко:
 
-\ud83e\udde0 \u0422\u0432\u043e\u0439 \u043f\u0440\u043e\u0444\u0438\u043b\u044c
-2-3 \u043f\u0440\u0435\u0434\u043b\u043e\u0436\u0435\u043d\u0438\u044f \u043e \u0442\u0438\u043f\u0435 \u043b\u0438\u0447\u043d\u043e\u0441\u0442\u0438.
+🧠 Твой профиль
+2-3 предложения о типе личности.
 
-\ud83d\udcbc \u0422\u043e\u043f-3 \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438
-\u0414\u043b\u044f \u043a\u0430\u0436\u0434\u043e\u0439: \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435, \u043f\u043e\u0447\u0435\u043c\u0443 \u043f\u043e\u0434\u0445\u043e\u0434\u0438\u0442 (1 \u043f\u0440\u0435\u0434\u043b\u043e\u0436\u0435\u043d\u0438\u0435), \u0441\u0440\u0435\u0434\u043d\u044f\u044f \u0437\u0430\u0440\u043f\u043b\u0430\u0442\u0430, \u0447\u0442\u043e \u0441\u0434\u0430\u0432\u0430\u0442\u044c \u043d\u0430 \u0415\u0413\u042d/\u041e\u0413\u042d.
+💼 Топ-3 профессии
+Для каждой: название, почему подходит (1 предложение), средняя зарплата, что сдавать на ЕГЭ/ОГЭ.
 
-\ud83c\udf93 \u0413\u0434\u0435 \u0443\u0447\u0438\u0442\u044c\u0441\u044f \u0432 {region}
-1-2 \u0440\u0435\u0430\u043b\u044c\u043d\u044b\u0445 \u0437\u0430\u0432\u0435\u0434\u0435\u043d\u0438\u044f \u0434\u043b\u044f \u043a\u0430\u0436\u0434\u043e\u0439 \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438 \u0441 \u0443\u0447\u0451\u0442\u043e\u043c \u0431\u044e\u0434\u0436\u0435\u0442\u0430 ({budget}).
+🎓 Где учиться в {region}
+1-2 реальных заведения для каждой профессии с учётом бюджета ({budget}).
 
-\ud83d\udcaa \u0421\u0438\u043b\u044c\u043d\u044b\u0435 \u0441\u0442\u043e\u0440\u043e\u043d\u044b
-3 \u043a\u0430\u0447\u0435\u0441\u0442\u0432\u0430.
+💪 Сильные стороны
+3 качества.
 
-\ud83d\ude80 \u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0448\u0430\u0433
-\u041e\u0434\u0438\u043d \u043a\u043e\u043d\u043a\u0440\u0435\u0442\u043d\u044b\u0439 \u0441\u043e\u0432\u0435\u0442.
+🚀 Следующий шаг
+Один конкретный совет.
 
-\u041f\u0438\u0448\u0438 \u043d\u0430 "\u0442\u044b", \u0431\u0435\u0437 \u0432\u043e\u0434\u044b."""
+Пиши на "ты", без воды."""
 
     try:
         result = ai_request([{"role": "user", "content": prompt}])
         await update.message.reply_text(result)
         await update.message.reply_text(
-            "\ud83d\udcac \u0417\u0430\u0434\u0430\u0432\u0430\u0439 \u043b\u044e\u0431\u044b\u0435 \u0432\u043e\u043f\u0440\u043e\u0441\u044b \u043f\u0440\u043e \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438 \u2014 \u043e\u0442\u0432\u0435\u0447\u0443 \u0447\u0435\u0441\u0442\u043d\u043e.\n/start \u2014 \u043d\u043e\u0432\u044b\u0439 \u0442\u0435\u0441\u0442"
+            "💬 Задавай любые вопросы про профессии — отвечу честно.\n/start — новый тест"
         )
         context.user_data["profile_summary"] = result
         context.user_data["chat_history"] = []
         increment_tests(update.effective_user.id)
 
-        # \u043f\u0430\u0440\u0441\u0438\u043c \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438 \u0434\u043b\u044f \u0441\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0438 (\u0433\u0440\u0443\u0431\u043e)
+        # парсим профессии для статистики (грубо)
         for line in result.split("\n"):
-            if line.startswith("\u2022") or (len(line) > 2 and line[0].isdigit() and line[1] == "."):
-                prof = line.lstrip("\u20221234567890. ").split("\u2014")[0].strip()
+            if line.startswith("•") or (len(line) > 2 and line[0].isdigit() and line[1] == "."):
+                prof = line.lstrip("•1234567890. ").split("—")[0].strip()
                 if prof:
                     add_profession_stat(prof)
     except Exception as e:
         logger.error(f"AI error: {e}")
-        await update.message.reply_text("\u0427\u0442\u043e-\u0442\u043e \u043f\u043e\u0448\u043b\u043e \u043d\u0435 \u0442\u0430\u043a. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439 /start \u0437\u0430\u043d\u043e\u0432\u043e.")
+        await update.message.reply_text("Что-то пошло не так. Попробуй /start заново.")
 
 
 async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if is_banned(update.effective_user.id):
-        await update.message.reply_text("\u0422\u044b \u0437\u0430\u0431\u043b\u043e\u043a\u0438\u0440\u043e\u0432\u0430\u043d.")
+        await update.message.reply_text("Ты заблокирован.")
         return FREE_CHAT
 
     if not context.user_data.get("profile_summary"):
-        await update.message.reply_text("\u041d\u0430\u043f\u0438\u0448\u0438 /start \u0447\u0442\u043e\u0431\u044b \u043d\u0430\u0447\u0430\u0442\u044c.")
+        await update.message.reply_text("Напиши /start чтобы начать.")
         return FREE_CHAT
 
     question = update.message.text.strip()
@@ -274,11 +274,11 @@ async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     system = f"""{system_prompt}
 
-\u041f\u0440\u043e\u0444\u0438\u043b\u044c \u043f\u043e\u0434\u0440\u043e\u0441\u0442\u043a\u0430:
+Профиль подростка:
 {profile}
 
-\u0420\u0435\u0433\u0438\u043e\u043d: {region}
-\u0411\u044e\u0434\u0436\u0435\u0442: {budget}"""
+Регион: {region}
+Бюджет: {budget}"""
 
     messages = [{"role": "system", "content": system}]
     messages += history[-6:]
@@ -292,31 +292,31 @@ async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["chat_history"] = history
     except Exception as e:
         logger.error(f"AI error: {e}")
-        await update.message.reply_text("\u0427\u0442\u043e-\u0442\u043e \u043f\u043e\u0448\u043b\u043e \u043d\u0435 \u0442\u0430\u043a. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439 \u0435\u0449\u0451 \u0440\u0430\u0437.")
+        await update.message.reply_text("Что-то пошло не так. Попробуй ещё раз.")
 
     return FREE_CHAT
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "\ud83e\udd16 \u0427\u0442\u043e \u044f \u0443\u043c\u0435\u044e:\n\n"
-        "\u2022 \u0422\u0435\u0441\u0442 \u043f\u0440\u043e\u0444\u043e\u0440\u0438\u0435\u043d\u0442\u0430\u0446\u0438\u0438 \u0438\u0437 8 \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432\n"
-        "\u2022 \u0410\u043d\u0430\u043b\u0438\u0437 \u0442\u0438\u043f\u0430 \u043b\u0438\u0447\u043d\u043e\u0441\u0442\u0438\n"
-        "\u2022 \u0422\u043e\u043f-3 \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438 \u0441\u043e \u0441\u0440\u0435\u0434\u043d\u0435\u0439 \u0437\u0430\u0440\u043f\u043b\u0430\u0442\u043e\u0439\n"
-        "\u2022 \u041f\u043e\u0434\u0431\u043e\u0440\u043a\u0430 \u0432\u0443\u0437\u043e\u0432 \u0438 \u043a\u043e\u043b\u043b\u0435\u0434\u0436\u0435\u0439 \u0432 \u0442\u0432\u043e\u0451\u043c \u0440\u0435\u0433\u0438\u043e\u043d\u0435\n"
-        "\u2022 \u0427\u0435\u0441\u0442\u043d\u044b\u0435 \u043e\u0442\u0432\u0435\u0442\u044b \u043d\u0430 \u0432\u043e\u043f\u0440\u043e\u0441\u044b \u043f\u0440\u043e \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438\n\n"
-        "/start \u2014 \u043d\u0430\u0447\u0430\u0442\u044c \u0442\u0435\u0441\u0442\n"
-        "/help \u2014 \u044d\u0442\u043e \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435\n"
-        "/admin \u2014 \u043f\u0430\u043d\u0435\u043b\u044c \u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f"
+        "🤖 Что я умею:\n\n"
+        "• Тест профориентации из 8 вопросов\n"
+        "• Анализ типа личности\n"
+        "• Топ-3 профессии со средней зарплатой\n"
+        "• Подборка вузов и колледжей в твоём регионе\n"
+        "• Честные ответы на вопросы про профессии\n\n"
+        "/start — начать тест\n"
+        "/help — это сообщение\n"
+        "/admin — панель управления"
     )
 
 
-# ===== \u0410\u0414\u041c\u0418\u041d\u041a\u0410 =====
+# ===== АДМИНКА =====
 
 async def admin_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["admin_mode"] = False
     await update.message.reply_text(
-        "\ud83d\udd10 \u0412\u0432\u0435\u0434\u0438 \u043f\u0430\u0440\u043e\u043b\u044c \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430:",
+        "🔐 Введи пароль администратора:",
         reply_markup=ReplyKeyboardRemove()
     )
     return ADMIN_PASSWORD_INPUT
@@ -328,7 +328,7 @@ async def admin_check_password(update: Update, context: ContextTypes.DEFAULT_TYP
         await show_admin_menu(update)
         return ADMIN_MENU
     else:
-        await update.message.reply_text("\u041d\u0435\u0432\u0435\u0440\u043d\u044b\u0439 \u043f\u0430\u0440\u043e\u043b\u044c.")
+        await update.message.reply_text("Неверный пароль.")
         return ConversationHandler.END
 
 
@@ -340,21 +340,21 @@ async def show_admin_menu(update: Update):
     tests = sum(u.get("tests_completed", 0) for u in users.values())
 
     top_profs = sorted(db.get("profession_stats", {}).items(), key=lambda x: x[1], reverse=True)[:5]
-    top_text = "\n".join([f"  {p}: {c}" for p, c in top_profs]) if top_profs else "  \u043d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445"
+    top_text = "\n".join([f"  {p}: {c}" for p, c in top_profs]) if top_profs else "  нет данных"
 
     await update.message.reply_text(
-        f"\ud83d\udc51 \u041f\u0430\u043d\u0435\u043b\u044c \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430\n\n"
-        f"\ud83d\udcca \u0421\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0430:\n"
-        f"  \u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439: {total}\n"
-        f"  \u0417\u0430\u0431\u0430\u043d\u0435\u043d\u043e: {banned}\n"
-        f"  \u0422\u0435\u0441\u0442\u043e\u0432 \u043f\u0440\u043e\u0439\u0434\u0435\u043d\u043e: {tests}\n\n"
-        f"\ud83c\udfc6 \u0422\u043e\u043f \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0439:\n{top_text}\n\n"
-        f"\u0412\u044b\u0431\u0435\u0440\u0438 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435:",
+        f"👑 Панель администратора\n\n"
+        f"📊 Статистика:\n"
+        f"  Пользователей: {total}\n"
+        f"  Забанено: {banned}\n"
+        f"  Тестов пройдено: {tests}\n\n"
+        f"🏆 Топ профессий:\n{top_text}\n\n"
+        f"Выбери действие:",
         reply_markup=ReplyKeyboardMarkup([
-            ["\ud83d\udce2 \u0420\u0430\u0441\u0441\u044b\u043b\u043a\u0430", "\ud83d\udeab \u0417\u0430\u0431\u0430\u043d\u0438\u0442\u044c"],
-            ["\u2705 \u0420\u0430\u0437\u0431\u0430\u043d\u0438\u0442\u044c", "\ud83d\udc65 \u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438"],
-            ["\ud83d\udcac \u0427\u0430\u0442 \u0441 \u0418\u0418", "\u270f\ufe0f \u0418\u0437\u043c\u0435\u043d\u0438\u0442\u044c \u043f\u0440\u043e\u043c\u043f\u0442"],
-            ["\u274c \u0412\u044b\u0439\u0442\u0438"]
+            ["📢 Рассылка", "🚫 Забанить"],
+            ["✅ Разбанить", "👥 Пользователи"],
+            ["💬 Чат с ИИ", "✏️ Изменить промпт"],
+            ["❌ Выйти"]
         ], resize_keyboard=True)
     )
 
@@ -362,51 +362,51 @@ async def show_admin_menu(update: Update):
 async def admin_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
 
-    if text == "\u274c \u0412\u044b\u0439\u0442\u0438":
+    if text == "❌ Выйти":
         context.user_data["admin_mode"] = False
-        await update.message.reply_text("\u0412\u044b\u0448\u0435\u043b \u0438\u0437 \u0430\u0434\u043c\u0438\u043d\u043a\u0438.", reply_markup=ReplyKeyboardRemove())
+        await update.message.reply_text("Вышел из админки.", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
-    elif text == "\ud83d\udce2 \u0420\u0430\u0441\u0441\u044b\u043b\u043a\u0430":
-        await update.message.reply_text("\u041d\u0430\u043f\u0438\u0448\u0438 \u0442\u0435\u043a\u0441\u0442 \u0440\u0430\u0441\u0441\u044b\u043b\u043a\u0438:", reply_markup=ReplyKeyboardRemove())
+    elif text == "📢 Рассылка":
+        await update.message.reply_text("Напиши текст рассылки:", reply_markup=ReplyKeyboardRemove())
         return ADMIN_BROADCAST
 
-    elif text == "\ud83d\udeab \u0417\u0430\u0431\u0430\u043d\u0438\u0442\u044c":
-        await update.message.reply_text("\u041d\u0430\u043f\u0438\u0448\u0438 username \u0438\u043b\u0438 ID \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f:", reply_markup=ReplyKeyboardRemove())
+    elif text == "🚫 Забанить":
+        await update.message.reply_text("Напиши username или ID пользователя:", reply_markup=ReplyKeyboardRemove())
         context.user_data["ban_action"] = "ban"
         return ADMIN_BAN
 
-    elif text == "\u2705 \u0420\u0430\u0437\u0431\u0430\u043d\u0438\u0442\u044c":
-        await update.message.reply_text("\u041d\u0430\u043f\u0438\u0448\u0438 username \u0438\u043b\u0438 ID \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f:", reply_markup=ReplyKeyboardRemove())
+    elif text == "✅ Разбанить":
+        await update.message.reply_text("Напиши username или ID пользователя:", reply_markup=ReplyKeyboardRemove())
         context.user_data["ban_action"] = "unban"
         return ADMIN_BAN
 
-    elif text == "\ud83d\udc65 \u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438":
+    elif text == "👥 Пользователи":
         db = load_db()
         users = db["users"]
         if not users:
-            await update.message.reply_text("\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439 \u043d\u0435\u0442.")
+            await update.message.reply_text("Пользователей нет.")
         else:
             lines = []
             for uid, u in list(users.items())[-20:]:
-                status = "\ud83d\udeab" if u.get("banned") else "\u2705"
-                lines.append(f"{status} @{u.get('username', uid)} | \u0442\u0435\u0441\u0442\u043e\u0432: {u.get('tests_completed', 0)}")
-            await update.message.reply_text("\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0435 20 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439:\n\n" + "\n".join(lines))
+                status = "🚫" if u.get("banned") else "✅"
+                lines.append(f"{status} @{u.get('username', uid)} | тестов: {u.get('tests_completed', 0)}")
+            await update.message.reply_text("Последние 20 пользователей:\n\n" + "\n".join(lines))
         await show_admin_menu(update)
         return ADMIN_MENU
 
-    elif text == "\ud83d\udcac \u0427\u0430\u0442 \u0441 \u0418\u0418":
+    elif text == "💬 Чат с ИИ":
         await update.message.reply_text(
-            "\u0420\u0435\u0436\u0438\u043c \u0447\u0430\u0442\u0430 \u0441 \u0418\u0418 \u0431\u0435\u0437 \u043e\u0433\u0440\u0430\u043d\u0438\u0447\u0435\u043d\u0438\u0439. \u041f\u0438\u0448\u0438 \u0447\u0442\u043e \u0443\u0433\u043e\u0434\u043d\u043e.\n/adminmenu \u2014 \u0432\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u0432 \u043c\u0435\u043d\u044e",
+            "Режим чата с ИИ без ограничений. Пиши что угодно.\n/adminmenu — вернуться в меню",
             reply_markup=ReplyKeyboardRemove()
         )
         context.user_data["admin_chat_history"] = []
         return ADMIN_CHAT
 
-    elif text == "\u270f\ufe0f \u0418\u0437\u043c\u0435\u043d\u0438\u0442\u044c \u043f\u0440\u043e\u043c\u043f\u0442":
+    elif text == "✏️ Изменить промпт":
         current = get_system_prompt()
         await update.message.reply_text(
-            f"\u0422\u0435\u043a\u0443\u0449\u0438\u0439 \u0441\u0438\u0441\u0442\u0435\u043c\u043d\u044b\u0439 \u043f\u0440\u043e\u043c\u043f\u0442:\n\n{current}\n\n\u041d\u0430\u043f\u0438\u0448\u0438 \u043d\u043e\u0432\u044b\u0439 \u043f\u0440\u043e\u043c\u043f\u0442:",
+            f"Текущий системный промпт:\n\n{current}\n\nНапиши новый промпт:",
             reply_markup=ReplyKeyboardRemove()
         )
         return ADMIN_PROMPT_EDIT
@@ -421,7 +421,124 @@ async def admin_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE, ap
     sent = 0
     failed = 0
 
-    await update.message.reply_text(f"\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u044e {len(users)} \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f\u043c...")
+    await update.message.reply_text(f"Отправляю {len(users)} пользователям...")
 
     for uid in users:
-        if
+        if users[uid].get("banned"):
+            continue
+        try:
+            await app.bot.send_message(chat_id=int(uid), text=f"📢 Сообщение от администратора:\n\n{text}")
+            sent += 1
+        except Exception:
+            failed += 1
+
+    await update.message.reply_text(f"Готово. Отправлено: {sent}, не доставлено: {failed}")
+    await show_admin_menu(update)
+    return ADMIN_MENU
+
+
+async def admin_ban_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    target = update.message.text.strip().lstrip("@")
+    action = context.user_data.get("ban_action", "ban")
+    db = load_db()
+
+    found = False
+    for uid, u in db["users"].items():
+        if u.get("username") == target or uid == target:
+            db["users"][uid]["banned"] = (action == "ban")
+            found = True
+            break
+
+    if found:
+        save_db(db)
+        word = "забанен" if action == "ban" else "разбанен"
+        await update.message.reply_text(f"Пользователь @{target} {word}.")
+    else:
+        await update.message.reply_text("Пользователь не найден.")
+
+    await show_admin_menu(update)
+    return ADMIN_MENU
+
+
+async def admin_chat_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text.strip()
+
+    if text == "/adminmenu":
+        await show_admin_menu(update)
+        return ADMIN_MENU
+
+    history = context.user_data.get("admin_chat_history", [])
+    history.append({"role": "user", "content": text})
+
+    try:
+        result = ai_request(history)
+        await update.message.reply_text(result)
+        history.append({"role": "assistant", "content": result})
+        context.user_data["admin_chat_history"] = history[-20:]
+    except Exception as e:
+        logger.error(f"AI error: {e}")
+        await update.message.reply_text("Ошибка. Попробуй ещё раз.")
+
+    return ADMIN_CHAT
+
+
+async def admin_prompt_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    new_prompt = update.message.text.strip()
+    set_system_prompt(new_prompt)
+    await update.message.reply_text("Промпт обновлён.")
+    await show_admin_menu(update)
+    return ADMIN_MENU
+
+
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Отменено.", reply_markup=ReplyKeyboardRemove())
+    return ConversationHandler.END
+
+
+# ===== MAIN =====
+
+def main():
+    app = Application.builder().token(TELEGRAM_TOKEN).build()
+
+    # Обычный бот
+    user_conv = ConversationHandler(
+        entry_points=[CommandHandler("start", start)],
+        states={
+            ASKING_CLASS: [MessageHandler(filters.TEXT & ~filters.COMMAND, asking_class)],
+            ASKING_REGION: [MessageHandler(filters.TEXT & ~filters.COMMAND, asking_region)],
+            ASKING_BUDGET: [MessageHandler(filters.TEXT & ~filters.COMMAND, asking_budget)],
+            ASKING_TEST: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer)],
+            FREE_CHAT: [MessageHandler(filters.TEXT & ~filters.COMMAND, free_chat)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+        allow_reentry=True,
+    )
+
+    # Рассылка с доступом к app
+    async def broadcast_wrapper(update, context):
+        return await admin_broadcast(update, context, app)
+
+    # Админка
+    admin_conv = ConversationHandler(
+        entry_points=[CommandHandler("admin", admin_start)],
+        states={
+            ADMIN_PASSWORD_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_check_password)],
+            ADMIN_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_menu_handler)],
+            ADMIN_BROADCAST: [MessageHandler(filters.TEXT & ~filters.COMMAND, broadcast_wrapper)],
+            ADMIN_BAN: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_ban_handler)],
+            ADMIN_CHAT: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_chat_handler)],
+            ADMIN_PROMPT_EDIT: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_prompt_edit)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+        allow_reentry=True,
+    )
+
+    app.add_handler(admin_conv)
+    app.add_handler(user_conv)
+    app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, free_chat))
+    app.run_polling()
+
+
+if __name__ == "__main__":
+    main()
