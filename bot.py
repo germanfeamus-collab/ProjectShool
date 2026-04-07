@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # Состояния
 (ASKING_CLASS, ASKING_REGION, ASKING_BUDGET, ASKING_TEST, FREE_CHAT) = range(5)
@@ -30,13 +30,13 @@ QUESTIONS = [
 
 def groq_request(messages):
     response = requests.post(
-        "https://api.groq.com/openai/v1/chat/completions",
+        "https://openrouter.ai/api/v1/chat/completions",
         headers={
-            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
             "Content-Type": "application/json"
         },
         json={
-            "model": "llama-3.3-70b-versatile",
+            "model": "nvidia/nemotron-3-super-120b-a12b:free",
             "messages": messages
         },
         timeout=60
