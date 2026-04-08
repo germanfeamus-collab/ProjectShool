@@ -2,9 +2,9 @@ import os
 import json
 import logging
 from datetime import datetime
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
-    Application, CommandHandler, MessageHandler, CallbackQueryHandler,
+    Application, CommandHandler, MessageHandler,
     filters, ContextTypes, ConversationHandler
 )
 import requests
@@ -17,41 +17,79 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 DB_FILE = "db.json"
 
-(ASKING_CLASS, ASKING_REGION, ASKING_BUDGET, ASKING_TEST, FREE_CHAT) = range(5)
-(ADMIN_PASSWORD_INPUT, ADMIN_MENU, ADMIN_BROADCAST, ADMIN_BAN, ADMIN_UNBAN,
- ADMIN_CHAT, ADMIN_PROMPT_EDIT, ADMIN_USER_INFO) = range(5, 13)
+(ASKING_CLASS, ASKING_HOBBY1, ASKING_HOBBY2, ASKING_HOBBY3,
+ ASKING_REGION, ASKING_BUDGET, ASKING_TEST, FREE_CHAT) = range(8)
 
-QUESTIONS = [
-    "Что тебе больше нравится?\n\nА) Работать с людьми\nБ) Работать с техникой/компьютерами\nВ) Работать с природой/животными\nГ) Работать с текстами/творчеством",
-    "Как проводишь свободное время?\n\nА) Общаюсь с друзьями, организую мероприятия\nБ) Играю в игры, программирую, собираю что-то\nВ) Провожу время на природе, занимаюсь спортом\nГ) Рисую, пишу, слушаю музыку",
-    "Какой предмет даётся легче всего?\n\nА) История, обществознание, литература\nБ) Математика, физика, информатика\nВ) Биология, химия, география\nГ) Русский язык, ИЗО, музыка",
-    "Каким видишь себя через 10 лет?\n\nА) Помогаю людям, работаю в команде\nБ) Создаю технологии, решаю сложные задачи\nВ) Работаю на свежем воздухе, занимаюсь исследованиями\nГ) Занимаюсь творчеством, создаю что-то уникальное",
-    "Что важнее в работе?\n\nА) Общение и помощь другим\nБ) Логика и точность\nВ) Физическая активность и природа\nГ) Свобода и самовыражение",
-    "Как принимаешь решения?\n\nА) Советуюсь с другими, учитываю чувства людей\nБ) Анализирую факты и логически размышляю\nВ) Доверяю интуиции и практическому опыту\nГ) Слушаю своё сердце и творческий импульс",
-    "Какой тип задач нравится?\n\nА) Организовывать людей и процессы\nБ) Решать технические и математические задачи\nВ) Исследовать и экспериментировать\nГ) Создавать и придумывать новое",
-    "Что больше всего раздражает?\n\nА) Когда люди не могут договориться\nБ) Когда что-то работает неправильно и непонятно почему\nВ) Когда приходится сидеть в офисе весь день\nГ) Когда нет места для творчества и инициативы",
+(ADMIN_PASSWORD_INPUT, ADMIN_MENU, ADMIN_BROADCAST, ADMIN_BROADCAST_CONFIRM,
+ ADMIN_BAN, ADMIN_CHAT, ADMIN_PROMPT_EDIT, ADMIN_USER_INFO) = range(8, 16)
+
+# Вопросы для 8-9 класса
+QUESTIONS_JUNIOR = [
+    "Что тебе нравится делать на уроках?\n\nА) Рассказывать, объяснять другим\nБ) Решать задачи и примеры\nВ) Проводить опыты, наблюдать\nГ) Рисовать, писать сочинения",
+    "Если тебе дали свободный урок — ты:\n\nА) Болтаешь с одноклассниками\nБ) Играешь в игры на телефоне или думаешь над задачкой\nВ) Идёшь на улицу или занимаешься спортом\nГ) Рисуешь, слушаешь музыку, читаешь",
+    "Какое хобби тебе ближе?\n\nА) Волонтёрство, помощь людям\nБ) Программирование, робототехника, конструктор\nВ) Туризм, природа, животные\nГ) Творчество — музыка, рисование, театр",
+    "Что тебя больше раздражает в школе?\n\nА) Когда никто не слушает учителя\nБ) Когда не объясняют логику, просто говорят «запомни»\nВ) Сидеть в классе весь день без движения\nГ) Когда нет места для своих идей",
+    "Твоя мечта после школы?\n\nА) Помогать людям, работать с детьми или больными\nБ) Создать крутую программу или устройство\nВ) Путешествовать и изучать природу\nГ) Стать известным артистом, дизайнером или писателем",
+    "Что ты делаешь когда нужно принять решение?\n\nА) Спрашиваю совета у друзей или родителей\nБ) Анализирую все варианты логически\nВ) Доверяю интуиции и своему опыту\nГ) Слушаю своё чутьё и настроение",
+    "Какой предмет даётся легче всего?\n\nА) История, литература, обществознание\nБ) Математика, физика, информатика\nВ) Биология, химия, география\nГ) Русский язык, ИЗО, музыка",
+    "Если бы ты мог выбрать работу прямо сейчас?\n\nА) Работать с людьми — учить, лечить, помогать\nБ) Программировать, чинить технику, изобретать\nВ) Работать на природе, с животными или в лаборатории\nГ) Создавать — снимать, рисовать, писать",
+]
+
+# Вопросы для 10-11 класса
+QUESTIONS_SENIOR = [
+    "Что тебе больше нравится в учёбе?\n\nА) Работать с людьми — проекты, дискуссии, командная работа\nБ) Решать сложные задачи — математика, физика, алгоритмы\nВ) Исследовать и экспериментировать — химия, биология, экология\nГ) Создавать — писать тексты, рисовать, снимать видео",
+    "Как ты проводишь свободное время?\n\nА) Общаюсь, организую мероприятия, помогаю другим\nБ) Программирую, играю в стратегии, разбираю устройства\nВ) Провожу время на природе, занимаюсь спортом\nГ) Создаю что-то — музыка, арт, блог, видео",
+    "Каким видишь себя через 10 лет?\n\nА) Работаю с людьми — управляю командой, помогаю, учу\nБ) Создаю технологии или решаю сложные технические задачи\nВ) Занимаюсь наукой или работаю на свежем воздухе\nГ) Занимаюсь творчеством или медиа",
+    "Что важнее в будущей работе?\n\nА) Общение, влияние на людей, помощь\nБ) Логика, точность, интересные задачи\nВ) Свобода действий, исследования, природа\nГ) Самовыражение, творчество, признание",
+    "Как принимаешь сложные решения?\n\nА) Советуюсь, учитываю мнения других\nБ) Анализирую данные и факты\nВ) Доверяю опыту и интуиции\nГ) Слушаю себя и своё ощущение",
+    "Какой тип задач нравится?\n\nА) Организовывать людей и процессы\nБ) Решать технические и аналитические задачи\nВ) Исследовать, экспериментировать, находить закономерности\nГ) Придумывать и создавать новое",
+    "Что тебя больше всего раздражает?\n\nА) Конфликты и недопонимание между людьми\nБ) Когда что-то работает неправильно и непонятно почему\nВ) Сидеть в офисе весь день без движения\nГ) Когда нет места для инициативы и творчества",
+    "Что ты готов делать ради интересной работы?\n\nА) Много общаться и работать с разными людьми\nБ) Постоянно учиться новым технологиям\nВ) Работать в нестандартных условиях — в поле, в лаборатории\nГ) Мириться с нестабильностью ради любимого дела",
+]
+
+HOBBY_QUESTIONS = [
+    ("Чем занимаешься помимо учёбы? Можешь написать несколько вещей — хобби, секции, увлечения.", "hobby1"),
+    ("Что тебе даётся легко, за что тебя хвалят? (учёба, спорт, творчество, техника — что угодно)", "hobby2"),
+    ("Есть ли профессии которые тебя привлекают или наоборот пугают? Напиши честно.", "hobby3"),
 ]
 
 DEFAULT_SYSTEM_PROMPT = """Ты крутой профориентационный эксперт для школьников. Отвечай ТОЛЬКО на русском языке.
 
-Стиль: живой, дружелюбный, как старший друг а не учитель. Без занудства и канцелярита.
-Длина: коротко — 3-4 предложения максимум.
-Честность: если профессия не подходит человеку — говори прямо, без сюсюканья.
-Тема: только профессии, образование, карьера. На остальное вежливо отказывай.
-Учебные заведения: только реальные, которые точно существуют."""
+Стиль: живой и прямой, как умный старший друг. Без занудства, штампов и канцелярита.
+Длина: коротко — 3-4 предложения максимум на один вопрос.
+Честность: если профессия не подходит — говори прямо и объясни почему, не ври.
+Тема: только профессии, образование, карьера, выбор пути. На остальное вежливо отказывай.
+Учебные заведения: называй только реально существующие.
+Зарплаты: указывай реальные средние по России за 2024 год."""
 
 
 # ===== БД =====
 
 def load_db():
     if not os.path.exists(DB_FILE):
-        return {"users": {}, "system_prompt": DEFAULT_SYSTEM_PROMPT, "profession_stats": {}, "total_messages": 0}
+        return {
+            "users": {},
+            "system_prompt": DEFAULT_SYSTEM_PROMPT,
+            "profession_stats": {},
+            "total_messages": 0,
+            "admin_ids": []
+        }
     with open(DB_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
 def save_db(db):
     with open(DB_FILE, "w", encoding="utf-8") as f:
         json.dump(db, f, ensure_ascii=False, indent=2)
+
+def is_admin(user_id):
+    db = load_db()
+    return user_id in db.get("admin_ids", [])
+
+def add_admin(user_id):
+    db = load_db()
+    if user_id not in db["admin_ids"]:
+        db["admin_ids"].append(user_id)
+    save_db(db)
 
 def register_user(user_id, username, first_name):
     db = load_db()
@@ -76,18 +114,15 @@ def register_user(user_id, username, first_name):
     save_db(db)
 
 def is_banned(user_id):
-    db = load_db()
-    return db["users"].get(str(user_id), {}).get("banned", False)
+    return load_db()["users"].get(str(user_id), {}).get("banned", False)
 
 def increment_tests(user_id, grade="", region=""):
     db = load_db()
     uid = str(user_id)
     if uid in db["users"]:
         db["users"][uid]["tests_completed"] = db["users"][uid].get("tests_completed", 0) + 1
-        if grade:
-            db["users"][uid]["grade"] = grade
-        if region:
-            db["users"][uid]["region"] = region
+        if grade: db["users"][uid]["grade"] = grade
+        if region: db["users"][uid]["region"] = region
     save_db(db)
 
 def increment_messages(user_id):
@@ -155,15 +190,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     register_user(user.id, user.username, user.first_name)
 
     if is_banned(user.id):
-        await update.message.reply_text("Ты заблокирован в этом боте.")
+        await update.message.reply_text("Ты заблокирован.")
         return ConversationHandler.END
 
     context.user_data.clear()
 
     await update.message.reply_text(
         f"Привет, {user.first_name}! 👋\n\n"
-        "Помогу разобраться с выбором профессии — быстро и без воды.\n\n"
-        "Сначала пара вопросов, потом тест из 8 шагов. В каком ты классе?",
+        "Помогу разобраться с выбором профессии — честно и без воды.\n\n"
+        "В каком ты классе?",
         reply_markup=ReplyKeyboardMarkup(
             [["8 класс", "9 класс"], ["10 класс", "11 класс"]],
             resize_keyboard=True, one_time_keyboard=True
@@ -173,10 +208,35 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def asking_class(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["grade"] = update.message.text.strip()
+    grade = update.message.text.strip()
+    context.user_data["grade"] = grade
+
+    grade_num = int(grade.split()[0])
+    context.user_data["is_senior"] = grade_num >= 10
+
+    q, key = HOBBY_QUESTIONS[0]
+    await update.message.reply_text(q, reply_markup=ReplyKeyboardRemove())
+    return ASKING_HOBBY1
+
+
+async def asking_hobby1(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["hobby1"] = update.message.text.strip()
+    q, key = HOBBY_QUESTIONS[1]
+    await update.message.reply_text(q)
+    return ASKING_HOBBY2
+
+
+async def asking_hobby2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["hobby2"] = update.message.text.strip()
+    q, key = HOBBY_QUESTIONS[2]
+    await update.message.reply_text(q)
+    return ASKING_HOBBY3
+
+
+async def asking_hobby3(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["hobby3"] = update.message.text.strip()
     await update.message.reply_text(
-        "Из какого ты города или региона?\n\nПодберу учебные заведения рядом с тобой.",
-        reply_markup=ReplyKeyboardRemove()
+        "Из какого ты города или региона?\n\nПодберу учебные заведения рядом."
     )
     return ASKING_REGION
 
@@ -198,11 +258,16 @@ async def asking_budget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["answers"] = []
     context.user_data["question_index"] = 0
 
+    is_senior = context.user_data.get("is_senior", False)
+    level = "10-11 класс" if is_senior else "8-9 класс"
+
     await update.message.reply_text(
-        "Поехали! 8 вопросов, отвечай честно — тут нет правильных ответов 🎯",
+        f"Поехали! 8 вопросов для {level} — отвечай честно 🎯",
         reply_markup=ReplyKeyboardMarkup([["А", "Б"], ["В", "Г"]], resize_keyboard=True, one_time_keyboard=True)
     )
-    await update.message.reply_text(f"1️⃣ {QUESTIONS[0]}")
+
+    questions = QUESTIONS_SENIOR if is_senior else QUESTIONS_JUNIOR
+    await update.message.reply_text(f"1️⃣ {questions[0]}")
     return ASKING_TEST
 
 
@@ -216,9 +281,12 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     index = context.user_data["question_index"] + 1
     context.user_data["question_index"] = index
 
-    if index < len(QUESTIONS):
+    is_senior = context.user_data.get("is_senior", False)
+    questions = QUESTIONS_SENIOR if is_senior else QUESTIONS_JUNIOR
+
+    if index < len(questions):
         markup = ReplyKeyboardMarkup([["А", "Б"], ["В", "Г"]], resize_keyboard=True, one_time_keyboard=True)
-        await update.message.reply_text(f"{index + 1}️⃣ {QUESTIONS[index]}", reply_markup=markup)
+        await update.message.reply_text(f"{index + 1}️⃣ {questions[index]}", reply_markup=markup)
         return ASKING_TEST
     else:
         await update.message.reply_text("Готово, анализирую... ⚡", reply_markup=ReplyKeyboardRemove())
@@ -231,16 +299,32 @@ async def analyze_and_respond(update: Update, context: ContextTypes.DEFAULT_TYPE
     grade = context.user_data.get("grade", "")
     region = context.user_data.get("region", "")
     budget = context.user_data.get("budget", "")
+    hobby1 = context.user_data.get("hobby1", "")
+    hobby2 = context.user_data.get("hobby2", "")
+    hobby3 = context.user_data.get("hobby3", "")
+    is_senior = context.user_data.get("is_senior", False)
 
-    pairs = [f"Вопрос {i+1}: {q}\nОтвет: {a}" for i, (q, a) in enumerate(zip(QUESTIONS, answers))]
+    questions = QUESTIONS_SENIOR if is_senior else QUESTIONS_JUNIOR
+    pairs = [f"Вопрос {i+1}: {q}\nОтвет: {a}" for i, (q, a) in enumerate(zip(questions, answers))]
     answers_text = "\n\n".join(pairs)
 
-    prompt = f"""Ты профориентационный эксперт — умный старший друг, не скучный консультант. Отвечай ТОЛЬКО на русском, никаких иностранных символов.
+    grade_context = (
+        "Ученик 10-11 класса — скоро ЕГЭ, выбор вуза актуален прямо сейчас. Учитывай это."
+        if is_senior else
+        "Ученик 8-9 класса — впереди ОГЭ и выбор профиля. Можно рассматривать и колледж после 9го."
+    )
+
+    prompt = f"""Ты профориентационный эксперт — умный старший друг. Отвечай ТОЛЬКО на русском, никаких иностранных символов.
+
+{grade_context}
 
 Данные:
 - Класс: {grade}
-- Регион: {region}  
+- Регион: {region}
 - Бюджет: {budget}
+- Хобби и увлечения: {hobby1}
+- Сильные стороны: {hobby2}
+- Привлекающие/пугающие профессии: {hobby3}
 
 Ответы на тест:
 {answers_text}
@@ -248,27 +332,28 @@ async def analyze_and_respond(update: Update, context: ContextTypes.DEFAULT_TYPE
 Напиши живо и по делу, строго по структуре:
 
 🧠 Твой профиль
-2-3 предложения — кто ты по складу характера и что тебя драйвит. Живо, без штампов.
+2-3 предложения — кто ты по складу характера, что тебя драйвит. Учти хобби и сильные стороны. Живо, без штампов.
 
 💼 Топ-3 профессии
-Для каждой одной строкой: название → почему подходит → средняя зарплата → что сдавать.
+Для каждой одной строкой: Название → почему подходит (с учётом хобби) → средняя зарплата 2024 → что сдавать на ЕГЭ/ОГЭ.
 
 🎓 Где учиться в {region}
-По 1-2 реальных заведения на каждую профессию. Только те что точно существуют. Учти бюджет: {budget}.
+По 1-2 реальных заведения на каждую профессию. Только существующие. Бюджет: {budget}.
+Если в регионе мало вариантов — предложи ближайшие крупные города.
 
 💪 Твои козыри
-3 сильные стороны — коротко и конкретно.
+3 сильные стороны — конкретно, без воды.
 
 🚀 Прямо сейчас
-Один конкретный шаг который можно сделать сегодня.
+Один конкретный шаг который можно сделать сегодня или на этой неделе.
 
-Пиши на "ты", разговорно, как будто объясняешь другу. Никакой воды."""
+Пиши на "ты", разговорно. Никакой воды и канцелярита."""
 
     try:
         result = ai_request([{"role": "user", "content": prompt}])
         await update.message.reply_text(result)
         await update.message.reply_text(
-            "Спрашивай что угодно про профессии — отвечу честно, без прикрас 💬\n\n/start — пройти тест заново"
+            "Спрашивай что угодно про профессии — отвечу честно 💬\n\n/start — пройти тест заново"
         )
         context.user_data["profile_summary"] = result
         context.user_data["chat_history"] = []
@@ -276,7 +361,7 @@ async def analyze_and_respond(update: Update, context: ContextTypes.DEFAULT_TYPE
 
         for line in result.split("\n"):
             line = line.strip()
-            if line and ("→" in line or line.startswith("•")):
+            if "→" in line:
                 prof = line.split("→")[0].lstrip("•123. ").strip()
                 if 3 < len(prof) < 40:
                     add_profession_stat(prof)
@@ -298,15 +383,24 @@ async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     profile = context.user_data.get("profile_summary", "")
     region = context.user_data.get("region", "")
     budget = context.user_data.get("budget", "")
+    grade = context.user_data.get("grade", "")
+    is_senior = context.user_data.get("is_senior", False)
     history = context.user_data.get("chat_history", [])
     system_prompt = get_system_prompt()
 
+    grade_context = (
+        "Ученик 10-11 класса, ЕГЭ актуален."
+        if is_senior else
+        "Ученик 8-9 класса, ОГЭ и выбор профиля."
+    )
+
     system = f"""{system_prompt}
 
-Профиль этого человека по результатам теста:
+{grade_context}
+Профиль по результатам теста:
 {profile}
 
-Регион: {region} | Бюджет: {budget}"""
+Регион: {region} | Бюджет: {budget} | Класс: {grade}"""
 
     messages = [{"role": "system", "content": system}]
     messages += history[-8:]
@@ -329,9 +423,9 @@ async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Что умею:\n\n"
-        "• Тест профориентации — 8 вопросов\n"
-        "• Анализ типа личности\n"
-        "• Топ-3 профессии с зарплатой и ЕГЭ\n"
+        "• Тест профориентации (разный для 8-9 и 10-11 класса)\n"
+        "• Анализ с учётом твоих хобби и сильных сторон\n"
+        "• Топ-3 профессии с зарплатой и ЕГЭ/ОГЭ\n"
         "• Подборка вузов и колледжей в твоём регионе\n"
         "• Честные ответы на вопросы про профессии\n\n"
         "/start — начать\n"
@@ -351,14 +445,20 @@ ADMIN_KEYBOARD = ReplyKeyboardMarkup([
 
 
 async def admin_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["admin_mode"] = False
+    user_id = update.effective_user.id
+
+    if is_admin(user_id):
+        await show_admin_stats(update)
+        return ADMIN_MENU
+
     await update.message.reply_text("🔐 Пароль:", reply_markup=ReplyKeyboardRemove())
     return ADMIN_PASSWORD_INPUT
 
 
 async def admin_check_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.text.strip() == ADMIN_PASSWORD:
-        context.user_data["admin_mode"] = True
+        add_admin(update.effective_user.id)
+        await update.message.reply_text("Доступ получен. Твой аккаунт сохранён — больше пароль не нужен. ✅")
         await show_admin_stats(update)
         return ADMIN_MENU
     await update.message.reply_text("Неверный пароль.")
@@ -377,7 +477,7 @@ async def show_admin_stats(update: Update):
     active_today = sum(1 for u in users.values() if u.get("last_active", "")[:10] == today)
 
     top_profs = sorted(db.get("profession_stats", {}).items(), key=lambda x: x[1], reverse=True)[:5]
-    top_text = "\n".join([f"  {i+1}. {p} — {c}" for i, (p, c) in enumerate(top_profs)]) if top_profs else "  нет данных"
+    top_text = "\n".join([f"  {i+1}. {p} — {c}" for i, (p, c) in enumerate(top_profs)]) or "  нет данных"
 
     top_regions = {}
     for u in users.values():
@@ -385,15 +485,19 @@ async def show_admin_stats(update: Update):
         if r:
             top_regions[r] = top_regions.get(r, 0) + 1
     top_reg = sorted(top_regions.items(), key=lambda x: x[1], reverse=True)[:3]
-    reg_text = ", ".join([f"{r} ({c})" for r, c in top_reg]) if top_reg else "нет данных"
+    reg_text = ", ".join([f"{r} ({c})" for r, c in top_reg]) or "нет данных"
+
+    seniors = sum(1 for u in users.values() if "10" in u.get("grade", "") or "11" in u.get("grade", ""))
+    juniors = total - seniors
 
     await update.message.reply_text(
-        f"👑 Админ-панель\n\n"
+        f"👑 Панель администратора\n\n"
         f"👥 Пользователей: {total}\n"
         f"🟢 Активны сегодня: {active_today}\n"
         f"🚫 Забанено: {banned}\n"
         f"📝 Тестов пройдено: {tests}\n"
-        f"💬 Сообщений всего: {messages}\n\n"
+        f"💬 Сообщений всего: {messages}\n"
+        f"🎓 8-9 класс: {juniors} | 10-11 класс: {seniors}\n\n"
         f"🏆 Топ профессий:\n{top_text}\n\n"
         f"📍 Топ регионов: {reg_text}",
         reply_markup=ADMIN_KEYBOARD
@@ -404,7 +508,6 @@ async def admin_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     text = update.message.text.strip()
 
     if text == "❌ Выйти":
-        context.user_data["admin_mode"] = False
         await update.message.reply_text("Вышел.", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
@@ -416,7 +519,7 @@ async def admin_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         db = load_db()
         users = db["users"]
         if not users:
-            await update.message.reply_text("Пользователей нет.")
+            await update.message.reply_text("Пользователей нет.", reply_markup=ADMIN_KEYBOARD)
         else:
             lines = []
             for uid, u in sorted(users.items(), key=lambda x: x[1].get("last_active", ""), reverse=True)[:15]:
@@ -426,7 +529,7 @@ async def admin_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 region = u.get("region", "?")
                 tests = u.get("tests_completed", 0)
                 lines.append(f"{status} {name} | {grade} | {region} | тестов: {tests}")
-            await update.message.reply_text("Последние 15 пользователей:\n\n" + "\n".join(lines))
+            await update.message.reply_text("Последние 15:\n\n" + "\n".join(lines), reply_markup=ADMIN_KEYBOARD)
         return ADMIN_MENU
 
     elif text == "📢 Рассылка":
@@ -434,7 +537,7 @@ async def admin_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return ADMIN_BROADCAST
 
     elif text == "🔍 Найти юзера":
-        await update.message.reply_text("Напиши username или ID:", reply_markup=ReplyKeyboardRemove())
+        await update.message.reply_text("Username или ID:", reply_markup=ReplyKeyboardRemove())
         return ADMIN_USER_INFO
 
     elif text == "🚫 Забанить":
@@ -449,7 +552,7 @@ async def admin_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     elif text == "💬 Чат с ИИ":
         await update.message.reply_text(
-            "Режим чата с ИИ без ограничений. /adminmenu — вернуться.",
+            "Чат с ИИ без ограничений. /adminmenu — назад.",
             reply_markup=ReplyKeyboardRemove()
         )
         context.user_data["admin_chat_history"] = []
@@ -466,16 +569,31 @@ async def admin_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     return ADMIN_MENU
 
 
-async def admin_broadcast_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, app):
+async def admin_broadcast_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
+    context.user_data["broadcast_text"] = text
     db = load_db()
-    users = db["users"]
+    active = sum(1 for u in db["users"].values() if not u.get("banned"))
+    await update.message.reply_text(
+        f"Предпросмотр:\n\n📢 {text}\n\nОтправить {active} пользователям?",
+        reply_markup=ReplyKeyboardMarkup([["✅ Отправить", "❌ Отмена"]], resize_keyboard=True, one_time_keyboard=True)
+    )
+    return ADMIN_BROADCAST_CONFIRM
+
+
+async def admin_broadcast_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE, app):
+    if update.message.text.strip() != "✅ Отправить":
+        await update.message.reply_text("Рассылка отменена.", reply_markup=ADMIN_KEYBOARD)
+        return ADMIN_MENU
+
+    text = context.user_data.get("broadcast_text", "")
+    db = load_db()
     sent = 0
     failed = 0
 
-    await update.message.reply_text(f"Отправляю {len(users)} пользователям...")
+    await update.message.reply_text("Отправляю...", reply_markup=ReplyKeyboardRemove())
 
-    for uid, u in users.items():
+    for uid, u in db["users"].items():
         if u.get("banned"):
             continue
         try:
@@ -484,7 +602,10 @@ async def admin_broadcast_handler(update: Update, context: ContextTypes.DEFAULT_
         except Exception:
             failed += 1
 
-    await update.message.reply_text(f"Готово. Отправлено: {sent}, не дошло: {failed}", reply_markup=ADMIN_KEYBOARD)
+    await update.message.reply_text(
+        f"Готово. Отправлено: {sent}, не дошло: {failed}",
+        reply_markup=ADMIN_KEYBOARD
+    )
     return ADMIN_MENU
 
 
@@ -495,9 +616,9 @@ async def admin_ban_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if result:
         word = "забанен 🚫" if action == "ban" else "разбанен ✅"
-        await update.message.reply_text(f"Пользователь {result} {word}.", reply_markup=ADMIN_KEYBOARD)
+        await update.message.reply_text(f"{result} {word}.", reply_markup=ADMIN_KEYBOARD)
     else:
-        await update.message.reply_text("Пользователь не найден.", reply_markup=ADMIN_KEYBOARD)
+        await update.message.reply_text("Не найден.", reply_markup=ADMIN_KEYBOARD)
 
     return ADMIN_MENU
 
@@ -512,8 +633,6 @@ async def admin_user_info_handler(update: Update, context: ContextTypes.DEFAULT_
 
     status = "🚫 Забанен" if u.get("banned") else "🟢 Активен"
     name = f"@{u['username']}" if u.get("username") else u.get("first_name", "?")
-    joined = u.get("joined", "?")[:10]
-    last = u.get("last_active", "?")[:10]
 
     await update.message.reply_text(
         f"👤 {name} (ID: {uid})\n"
@@ -522,8 +641,8 @@ async def admin_user_info_handler(update: Update, context: ContextTypes.DEFAULT_
         f"Регион: {u.get('region', '?')}\n"
         f"Тестов: {u.get('tests_completed', 0)}\n"
         f"Сообщений: {u.get('messages_sent', 0)}\n"
-        f"Зарегистрирован: {joined}\n"
-        f"Последняя активность: {last}",
+        f"Зарегистрирован: {u.get('joined', '?')[:10]}\n"
+        f"Последняя активность: {u.get('last_active', '?')[:10]}",
         reply_markup=ADMIN_KEYBOARD
     )
     return ADMIN_MENU
@@ -552,8 +671,7 @@ async def admin_chat_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 async def admin_prompt_edit_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    new_prompt = update.message.text.strip()
-    set_system_prompt(new_prompt)
+    set_system_prompt(update.message.text.strip())
     await update.message.reply_text("Промпт обновлён ✅", reply_markup=ADMIN_KEYBOARD)
     return ADMIN_MENU
 
@@ -568,15 +686,16 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
 
-    async def broadcast_wrapper(update, context):
-        return await admin_broadcast_handler(update, context, app)
+    async def broadcast_confirm_wrapper(update, context):
+        return await admin_broadcast_confirm(update, context, app)
 
     admin_conv = ConversationHandler(
         entry_points=[CommandHandler("admin", admin_start)],
         states={
             ADMIN_PASSWORD_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_check_password)],
             ADMIN_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_menu_handler)],
-            ADMIN_BROADCAST: [MessageHandler(filters.TEXT & ~filters.COMMAND, broadcast_wrapper)],
+            ADMIN_BROADCAST: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_broadcast_handler)],
+            ADMIN_BROADCAST_CONFIRM: [MessageHandler(filters.TEXT & ~filters.COMMAND, broadcast_confirm_wrapper)],
             ADMIN_BAN: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_ban_handler)],
             ADMIN_CHAT: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_chat_handler)],
             ADMIN_PROMPT_EDIT: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_prompt_edit_handler)],
@@ -590,6 +709,9 @@ def main():
         entry_points=[CommandHandler("start", start)],
         states={
             ASKING_CLASS: [MessageHandler(filters.TEXT & ~filters.COMMAND, asking_class)],
+            ASKING_HOBBY1: [MessageHandler(filters.TEXT & ~filters.COMMAND, asking_hobby1)],
+            ASKING_HOBBY2: [MessageHandler(filters.TEXT & ~filters.COMMAND, asking_hobby2)],
+            ASKING_HOBBY3: [MessageHandler(filters.TEXT & ~filters.COMMAND, asking_hobby3)],
             ASKING_REGION: [MessageHandler(filters.TEXT & ~filters.COMMAND, asking_region)],
             ASKING_BUDGET: [MessageHandler(filters.TEXT & ~filters.COMMAND, asking_budget)],
             ASKING_TEST: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer)],
