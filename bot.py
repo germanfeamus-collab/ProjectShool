@@ -8,6 +8,7 @@ from telegram.ext import (
     filters, ContextTypes, ConversationHandler
 )
 import requests
+import time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,7 +24,6 @@ DB_FILE = "db.json"
 (ADMIN_PASSWORD_INPUT, ADMIN_MENU, ADMIN_BROADCAST, ADMIN_BROADCAST_CONFIRM,
  ADMIN_BAN, ADMIN_CHAT, ADMIN_PROMPT_EDIT, ADMIN_USER_INFO) = range(8, 16)
 
-# Вопросы для 8-9 класса
 QUESTIONS_JUNIOR = [
     "Что тебе нравится делать на уроках?\n\nА) Рассказывать, объяснять другим\nБ) Решать задачи и примеры\nВ) Проводить опыты, наблюдать\nГ) Рисовать, писать сочинения",
     "Если тебе дали свободный урок — ты:\n\nА) Болтаешь с одноклассниками\nБ) Играешь в игры на телефоне или думаешь над задачкой\nВ) Идёшь на улицу или занимаешься спортом\nГ) Рисуешь, слушаешь музыку, читаешь",
@@ -35,7 +35,6 @@ QUESTIONS_JUNIOR = [
     "Если бы ты мог выбрать работу прямо сейчас?\n\nА) Работать с людьми — учить, лечить, помогать\nБ) Программировать, чинить технику, изобретать\nВ) Работать на природе, с животными или в лаборатории\nГ) Создавать — снимать, рисовать, писать",
 ]
 
-# Вопросы для 10-11 класса
 QUESTIONS_SENIOR = [
     "Что тебе больше нравится в учёбе?\n\nА) Работать с людьми — проекты, дискуссии, командная работа\nБ) Решать сложные задачи — математика, физика, алгоритмы\nВ) Исследовать и экспериментировать — химия, биология, экология\nГ) Создавать — писать тексты, рисовать, снимать видео",
     "Как ты проводишь свободное время?\n\nА) Общаюсь, организую мероприятия, помогаю другим\nБ) Программирую, играю в стратегии, разбираю устройства\nВ) Провожу время на природе, занимаюсь спортом\nГ) Создаю что-то — музыка, арт, блог, видео",
@@ -62,6 +61,12 @@ DEFAULT_SYSTEM_PROMPT = """Ты крутой профориентационны�
 Учебные заведения: называй только реально существующие.
 Зарплаты: указывай реальные средние по России за 2024 год."""
 
+ANSWER_KEYBOARD = ReplyKeyboardMarkup(
+    [["А", "Б"], ["В", "Г"]],
+    resize_keyboard=True,
+    one_time_keyboard=True
+)
+
 
 # ===== БД =====
 
@@ -82,8 +87,7 @@ def save_db(db):
         json.dump(db, f, ensure_ascii=False, indent=2)
 
 def is_admin(user_id):
-    db = load_db()
-    return user_id in db.get("admin_ids", [])
+    return user_id in load_db().get("admin_ids", [])
 
 def add_admin(user_id):
     db = load_db()
@@ -106,6 +110,7 @@ def register_user(user_id, username, first_name):
             "last_active": now,
             "grade": "",
             "region": "",
+            "profile_summary": "",   # FIX: сохраняем профиль в БД
         }
     else:
         db["users"][uid]["last_active"] = now
@@ -116,14 +121,25 @@ def register_user(user_id, username, first_name):
 def is_banned(user_id):
     return load_db()["users"].get(str(user_id), {}).get("banned", False)
 
-def increment_tests(user_id, grade="", region=""):
+def save_user_profile(user_id, profile_summary, grade="", region="", budget="", hobby1="", hobby2="", hobby3=""):
+    """FIX: сохраняем профиль пользователя в БД чтобы пережил рестарт бота"""
     db = load_db()
     uid = str(user_id)
     if uid in db["users"]:
         db["users"][uid]["tests_completed"] = db["users"][uid].get("tests_completed", 0) + 1
+        db["users"][uid]["profile_summary"] = profile_summary
         if grade: db["users"][uid]["grade"] = grade
         if region: db["users"][uid]["region"] = region
+        if budget: db["users"][uid]["budget"] = budget
+        if hobby1: db["users"][uid]["hobby1"] = hobby1
+        if hobby2: db["users"][uid]["hobby2"] = hobby2
+        if hobby3: db["users"][uid]["hobby3"] = hobby3
     save_db(db)
+
+def get_saved_profile(user_id):
+    """FIX: достаём сохранённый профиль из БД"""
+    u = load_db()["users"].get(str(user_id), {})
+    return u.get("profile_summary", "")
 
 def increment_messages(user_id):
     db = load_db()
@@ -167,20 +183,31 @@ def get_user_info(identifier):
 
 # ===== АПИ =====
 
-def ai_request(messages):
-    response = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers={
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json"
-        },
-        json={
-            "model": "nvidia/nemotron-3-super-120b-a12b:free",
-            "messages": messages
-        },
-        timeout=60
-    )
-    return response.json()["choices"][0]["message"]["content"]
+def ai_request(messages, retries=2):
+    """FIX: retry при ошибке"""
+    for attempt in range(retries + 1):
+        try:
+            response = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "nvidia/nemotron-super-49b-v1:free",
+                    "messages": messages
+                },
+                timeout=60
+            )
+            response.raise_for_status()
+            content = response.json()["choices"][0]["message"]["content"]
+            if content:
+                return content
+        except Exception as e:
+            logger.error(f"AI attempt {attempt + 1} failed: {e}")
+            if attempt < retries:
+                time.sleep(2)
+    raise Exception("AI недоступен после нескольких попыток")
 
 
 # ===== ОБЫЧНЫЙ БОТ =====
@@ -207,28 +234,47 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ASKING_CLASS
 
 
+async def reset_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """FIX: /reset — начать тест заново не теряя историю"""
+    context.user_data.clear()
+    await update.message.reply_text(
+        "Данные сброшены. Напиши /start чтобы пройти тест заново.",
+        reply_markup=ReplyKeyboardRemove()
+    )
+    return ConversationHandler.END
+
+
 async def asking_class(update: Update, context: ContextTypes.DEFAULT_TYPE):
     grade = update.message.text.strip()
+    # FIX: валидация ввода класса
+    if grade not in ["8 класс", "9 класс", "10 класс", "11 класс"]:
+        await update.message.reply_text(
+            "Выбери класс из кнопок 👇",
+            reply_markup=ReplyKeyboardMarkup(
+                [["8 класс", "9 класс"], ["10 класс", "11 класс"]],
+                resize_keyboard=True, one_time_keyboard=True
+            )
+        )
+        return ASKING_CLASS
+
     context.user_data["grade"] = grade
+    context.user_data["is_senior"] = int(grade.split()[0]) >= 10
 
-    grade_num = int(grade.split()[0])
-    context.user_data["is_senior"] = grade_num >= 10
-
-    q, key = HOBBY_QUESTIONS[0]
+    q, _ = HOBBY_QUESTIONS[0]
     await update.message.reply_text(q, reply_markup=ReplyKeyboardRemove())
     return ASKING_HOBBY1
 
 
 async def asking_hobby1(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["hobby1"] = update.message.text.strip()
-    q, key = HOBBY_QUESTIONS[1]
+    q, _ = HOBBY_QUESTIONS[1]
     await update.message.reply_text(q)
     return ASKING_HOBBY2
 
 
 async def asking_hobby2(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["hobby2"] = update.message.text.strip()
-    q, key = HOBBY_QUESTIONS[2]
+    q, _ = HOBBY_QUESTIONS[2]
     await update.message.reply_text(q)
     return ASKING_HOBBY3
 
@@ -259,22 +305,22 @@ async def asking_budget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["question_index"] = 0
 
     is_senior = context.user_data.get("is_senior", False)
+    questions = QUESTIONS_SENIOR if is_senior else QUESTIONS_JUNIOR
     level = "10-11 класс" if is_senior else "8-9 класс"
 
     await update.message.reply_text(
         f"Поехали! 8 вопросов для {level} — отвечай честно 🎯",
-        reply_markup=ReplyKeyboardMarkup([["А", "Б"], ["В", "Г"]], resize_keyboard=True, one_time_keyboard=True)
+        reply_markup=ReplyKeyboardRemove()
     )
-
-    questions = QUESTIONS_SENIOR if is_senior else QUESTIONS_JUNIOR
-    await update.message.reply_text(f"1️⃣ {questions[0]}")
+    # FIX: клавиатура показывается вместе с вопросом, а не отдельно
+    await update.message.reply_text(f"1️⃣ {questions[0]}", reply_markup=ANSWER_KEYBOARD)
     return ASKING_TEST
 
 
 async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip().upper()
     if text not in ["А", "Б", "В", "Г"]:
-        await update.message.reply_text("Жми А, Б, В или Г 👇")
+        await update.message.reply_text("Жми А, Б, В или Г 👇", reply_markup=ANSWER_KEYBOARD)
         return ASKING_TEST
 
     context.user_data["answers"].append(text)
@@ -285,8 +331,11 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     questions = QUESTIONS_SENIOR if is_senior else QUESTIONS_JUNIOR
 
     if index < len(questions):
-        markup = ReplyKeyboardMarkup([["А", "Б"], ["В", "Г"]], resize_keyboard=True, one_time_keyboard=True)
-        await update.message.reply_text(f"{index + 1}️⃣ {questions[index]}", reply_markup=markup)
+        # FIX: клавиатура на каждом вопросе
+        await update.message.reply_text(
+            f"{index + 1}️⃣ {questions[index]}",
+            reply_markup=ANSWER_KEYBOARD
+        )
         return ASKING_TEST
     else:
         await update.message.reply_text("Готово, анализирую... ⚡", reply_markup=ReplyKeyboardRemove())
@@ -295,7 +344,7 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def analyze_and_respond(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    answers = context.user_data["answers"]
+    answers = context.user_data.get("answers", [])
     grade = context.user_data.get("grade", "")
     region = context.user_data.get("region", "")
     budget = context.user_data.get("budget", "")
@@ -353,11 +402,18 @@ async def analyze_and_respond(update: Update, context: ContextTypes.DEFAULT_TYPE
         result = ai_request([{"role": "user", "content": prompt}])
         await update.message.reply_text(result)
         await update.message.reply_text(
-            "Спрашивай что угодно про профессии — отвечу честно 💬\n\n/start — пройти тест заново"
+            "Спрашивай что угодно про профессии — отвечу честно 💬\n\n"
+            "/start — пройти тест заново  |  /reset — сбросить данные"
         )
+
+        # FIX: сохраняем профиль в БД — переживёт рестарт бота
         context.user_data["profile_summary"] = result
         context.user_data["chat_history"] = []
-        increment_tests(update.effective_user.id, grade, region)
+        save_user_profile(
+            update.effective_user.id, result,
+            grade=grade, region=region, budget=budget,
+            hobby1=hobby1, hobby2=hobby2, hobby3=hobby3
+        )
 
         for line in result.split("\n"):
             line = line.strip()
@@ -365,19 +421,45 @@ async def analyze_and_respond(update: Update, context: ContextTypes.DEFAULT_TYPE
                 prof = line.split("→")[0].lstrip("•123. ").strip()
                 if 3 < len(prof) < 40:
                     add_profession_stat(prof)
+
     except Exception as e:
-        logger.error(f"AI error: {e}")
-        await update.message.reply_text("Что-то сломалось. Попробуй /start заново.")
+        logger.error(f"AI error in analyze_and_respond: {e}")
+        # FIX: даже при ошибке ставим fallback profile_summary,
+        # чтобы юзер не застрял и мог задавать вопросы вручную
+        fallback = f"[Профиль: {grade}, {region}, хобби: {hobby1}]"
+        context.user_data["profile_summary"] = fallback
+        context.user_data["chat_history"] = []
+        save_user_profile(update.effective_user.id, fallback, grade=grade, region=region)
+        await update.message.reply_text(
+            "Что-то пошло не так с анализом 😔 Попробуй спросить меня напрямую — "
+            "например: «какие профессии мне подойдут?» или /start чтобы начать заново."
+        )
 
 
 async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if is_banned(update.effective_user.id):
+    user = update.effective_user
+    if is_banned(user.id):
         await update.message.reply_text("Ты заблокирован.")
         return FREE_CHAT
 
+    # FIX: если profile_summary нет в памяти — достаём из БД (после рестарта бота)
     if not context.user_data.get("profile_summary"):
-        await update.message.reply_text("Напиши /start чтобы начать.")
-        return FREE_CHAT
+        saved = get_saved_profile(user.id)
+        if saved:
+            context.user_data["profile_summary"] = saved
+            context.user_data["chat_history"] = []
+            # восстанавливаем данные из БД
+            db = load_db()
+            u = db["users"].get(str(user.id), {})
+            context.user_data["grade"] = u.get("grade", "")
+            context.user_data["region"] = u.get("region", "")
+            context.user_data["budget"] = u.get("budget", "")
+            context.user_data["is_senior"] = "10" in u.get("grade", "") or "11" in u.get("grade", "")
+        else:
+            await update.message.reply_text(
+                "Сначала пройди тест — напиши /start 👇"
+            )
+            return FREE_CHAT
 
     question = update.message.text.strip()
     profile = context.user_data.get("profile_summary", "")
@@ -412,10 +494,12 @@ async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         history.append({"role": "user", "content": question})
         history.append({"role": "assistant", "content": result})
         context.user_data["chat_history"] = history
-        increment_messages(update.effective_user.id)
+        increment_messages(user.id)
     except Exception as e:
-        logger.error(f"AI error: {e}")
-        await update.message.reply_text("Ошибка. Попробуй ещё раз.")
+        logger.error(f"AI error in free_chat: {e}")
+        await update.message.reply_text(
+            "ИИ не отвечает, попробуй через минуту 🙏"
+        )
 
     return FREE_CHAT
 
@@ -428,7 +512,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• Топ-3 профессии с зарплатой и ЕГЭ/ОГЭ\n"
         "• Подборка вузов и колледжей в твоём регионе\n"
         "• Честные ответы на вопросы про профессии\n\n"
-        "/start — начать\n"
+        "/start — начать тест\n"
+        "/reset — сбросить данные и начать заново\n"
         "/help — это сообщение"
     )
 
@@ -446,11 +531,9 @@ ADMIN_KEYBOARD = ReplyKeyboardMarkup([
 
 async def admin_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-
     if is_admin(user_id):
         await show_admin_stats(update)
         return ADMIN_MENU
-
     await update.message.reply_text("🔐 Пароль:", reply_markup=ReplyKeyboardRemove())
     return ADMIN_PASSWORD_INPUT
 
@@ -458,7 +541,7 @@ async def admin_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def admin_check_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.text.strip() == ADMIN_PASSWORD:
         add_admin(update.effective_user.id)
-        await update.message.reply_text("Доступ получен. Твой аккаунт сохранён — больше пароль не нужен. ✅")
+        await update.message.reply_text("Доступ получен. Аккаунт сохранён — пароль больше не нужен. ✅")
         await show_admin_stats(update)
         return ADMIN_MENU
     await update.message.reply_text("Неверный пароль.")
@@ -665,7 +748,7 @@ async def admin_chat_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         context.user_data["admin_chat_history"] = history[-20:]
     except Exception as e:
         logger.error(f"AI error: {e}")
-        await update.message.reply_text("Ошибка.")
+        await update.message.reply_text("Ошибка ИИ, попробуй позже.")
 
     return ADMIN_CHAT
 
@@ -717,14 +800,20 @@ def main():
             ASKING_TEST: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer)],
             FREE_CHAT: [MessageHandler(filters.TEXT & ~filters.COMMAND, free_chat)],
         },
-        fallbacks=[CommandHandler("cancel", cancel)],
+        fallbacks=[
+            CommandHandler("cancel", cancel),
+            CommandHandler("reset", reset_command),
+        ],
         allow_reentry=True,
     )
 
     app.add_handler(admin_conv)
     app.add_handler(user_conv)
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("reset", reset_command))
+    # FIX: standalone handler — только для юзеров вне конверсации
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, free_chat))
+
     app.run_polling()
 
 
