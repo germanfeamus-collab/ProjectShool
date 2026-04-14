@@ -258,15 +258,76 @@ async def asking_budget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["answers"] = []
     context.user_data["question_index"] = 0
 
+    grade = context.user_data.get("grade", "")
+    hobby1 = context.user_data.get("hobby1", "")
+    hobby2 = context.user_data.get("hobby2", "")
+    hobby3 = context.user_data.get("hobby3", "")
     is_senior = context.user_data.get("is_senior", False)
     level = "10-11 класс" if is_senior else "8-9 класс"
 
+    await update.message.reply_text("Генерирую персональный тест под тебя... ⚡", reply_markup=ReplyKeyboardRemove())
+
+    try:
+        prompt = f"""Создай 8 вопросов для теста профориентации школьника.
+
+Данные о человеке:
+- Класс: {grade}
+- Хобби и увлечения: {hobby1}
+- Сильные стороны: {hobby2}
+- Интерес к профессиям: {hobby3}
+
+Правила:
+- Вопросы должны учитывать конкретные хобби и интересы этого человека
+- Каждый вопрос — 4 варианта ответа (А, Б, В, Г)
+- Вопросы должны помочь определить подходящую профессию
+- Пиши на русском, коротко и понятно
+- Вопросы должны быть разными — про предпочтения, стиль работы, ценности, мечты
+
+Формат ответа — СТРОГО JSON массив, без лишнего текста:
+[
+  {{
+    "q": "Текст вопроса",
+    "a": "Вариант А",
+    "b": "Вариант Б", 
+    "c": "Вариант В",
+    "d": "Вариант Г"
+  }}
+]
+
+Верни ТОЛЬКО JSON, ничего больше."""
+
+        result = ai_request([{"role": "user", "content": prompt}])
+        
+        # Чистим от markdown если есть
+        result = result.strip()
+        if result.startswith("```"):
+            result = result.split("```")[1]
+            if result.startswith("json"):
+                result = result[4:]
+        result = result.strip()
+        
+        import json as json_lib
+        questions_data = json_lib.loads(result)
+        
+        # Формируем вопросы в нужный формат
+        questions = []
+        for item in questions_data[:8]:
+            q_text = f"{item['q']}\n\nА) {item['a']}\nБ) {item['b']}\nВ) {item['c']}\nГ) {item['d']}"
+            questions.append(q_text)
+        
+        context.user_data["generated_questions"] = questions
+        
+    except Exception as e:
+        logger.error(f"Question gen error: {e}")
+        # Фолбэк на стандартные вопросы
+        is_senior = context.user_data.get("is_senior", False)
+        context.user_data["generated_questions"] = QUESTIONS_SENIOR if is_senior else QUESTIONS_JUNIOR
+
+    questions = context.user_data["generated_questions"]
     await update.message.reply_text(
-        f"Поехали! 8 вопросов для {level} — отвечай честно 🎯",
+        f"Твой персональный тест готов! Отвечай честно 🎯",
         reply_markup=ReplyKeyboardMarkup([["А", "Б"], ["В", "Г"]], resize_keyboard=True, one_time_keyboard=True)
     )
-
-    questions = QUESTIONS_SENIOR if is_senior else QUESTIONS_JUNIOR
     await update.message.reply_text(f"1️⃣ {questions[0]}")
     return ASKING_TEST
 
@@ -281,8 +342,10 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     index = context.user_data["question_index"] + 1
     context.user_data["question_index"] = index
 
-    is_senior = context.user_data.get("is_senior", False)
-    questions = QUESTIONS_SENIOR if is_senior else QUESTIONS_JUNIOR
+    questions = context.user_data.get("generated_questions")
+    if not questions:
+        is_senior = context.user_data.get("is_senior", False)
+        questions = QUESTIONS_SENIOR if is_senior else QUESTIONS_JUNIOR
 
     if index < len(questions):
         markup = ReplyKeyboardMarkup([["А", "Б"], ["В", "Г"]], resize_keyboard=True, one_time_keyboard=True)
@@ -304,7 +367,9 @@ async def analyze_and_respond(update: Update, context: ContextTypes.DEFAULT_TYPE
     hobby3 = context.user_data.get("hobby3", "")
     is_senior = context.user_data.get("is_senior", False)
 
-    questions = QUESTIONS_SENIOR if is_senior else QUESTIONS_JUNIOR
+    questions = context.user_data.get("generated_questions")
+    if not questions:
+        questions = QUESTIONS_SENIOR if is_senior else QUESTIONS_JUNIOR
     pairs = [f"Вопрос {i+1}: {q}\nОтвет: {a}" for i, (q, a) in enumerate(zip(questions, answers))]
     answers_text = "\n\n".join(pairs)
 
@@ -329,25 +394,22 @@ async def analyze_and_respond(update: Update, context: ContextTypes.DEFAULT_TYPE
 Ответы на тест:
 {answers_text}
 
-Напиши живо и по делу, строго по структуре:
+Напиши коротко и живо, строго по структуре:
 
-🧠 Твой профиль
-2-3 предложения — кто ты по складу характера, что тебя драйвит. Учти хобби и сильные стороны. Живо, без штампов.
+🧠 Профиль
+1-2 предложения — кто ты по характеру и что тебя драйвит.
 
 💼 Топ-3 профессии
-Для каждой одной строкой: Название → почему подходит (с учётом хобби) → средняя зарплата 2024 → что сдавать на ЕГЭ/ОГЭ.
+Каждая одной строкой: Название → почему подходит → зарплата → ЕГЭ/ОГЭ
 
 🎓 Где учиться в {region}
-По 1-2 реальных заведения на каждую профессию. Только существующие. Бюджет: {budget}.
-Если в регионе мало вариантов — предложи ближайшие крупные города.
+По 1 заведению на профессию. Только реальные. Бюджет: {budget}.
 
-💪 Твои козыри
-3 сильные стороны — конкретно, без воды.
+💪 Козыри: 3 качества одной строкой
 
-🚀 Прямо сейчас
-Один конкретный шаг который можно сделать сегодня или на этой неделе.
+🚀 Один шаг прямо сейчас
 
-Пиши на "ты", разговорно. Никакой воды и канцелярита."""
+Пиши на "ты", максимально коротко и по делу."""
 
     try:
         result = ai_request([{"role": "user", "content": prompt}])
