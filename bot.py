@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 DB_FILE = "db.json"
 
@@ -168,19 +168,30 @@ def get_user_info(identifier):
 # ===== АПИ =====
 
 def ai_request(messages):
+    system_text = ""
+    gemini_messages = []
+    for m in messages:
+        if m["role"] == "system":
+            system_text = m["content"]
+        elif m["role"] == "user":
+            gemini_messages.append({"role": "user", "parts": [{"text": m["content"]}]})
+        elif m["role"] == "assistant":
+            gemini_messages.append({"role": "model", "parts": [{"text": m["content"]}]})
+
+    if not gemini_messages:
+        gemini_messages.append({"role": "user", "parts": [{"text": "Привет"}]})
+
+    body = {"contents": gemini_messages}
+    if system_text:
+        body["systemInstruction"] = {"parts": [{"text": system_text}]}
+
     response = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers={
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json"
-        },
-        json={
-            "model": "nvidia/nemotron-3-super-120b-a12b:free",
-            "messages": messages
-        },
+        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}",
+        headers={"Content-Type": "application/json"},
+        json=body,
         timeout=60
     )
-    return response.json()["choices"][0]["message"]["content"]
+    return response.json()["candidates"][0]["content"]["parts"][0]["text"]
 
 
 # ===== ОБЫЧНЫЙ БОТ =====
@@ -724,7 +735,6 @@ def main():
     app.add_handler(admin_conv)
     app.add_handler(user_conv)
     app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, free_chat))
     app.run_polling()
 
 
