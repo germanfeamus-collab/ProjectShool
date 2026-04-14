@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 DB_FILE = "db.json"
 
@@ -168,30 +168,19 @@ def get_user_info(identifier):
 # ===== АПИ =====
 
 def ai_request(messages):
-    system_text = ""
-    gemini_messages = []
-    for m in messages:
-        if m["role"] == "system":
-            system_text = m["content"]
-        elif m["role"] == "user":
-            gemini_messages.append({"role": "user", "parts": [{"text": m["content"]}]})
-        elif m["role"] == "assistant":
-            gemini_messages.append({"role": "model", "parts": [{"text": m["content"]}]})
-
-    if not gemini_messages:
-        gemini_messages.append({"role": "user", "parts": [{"text": "Привет"}]})
-
-    body = {"contents": gemini_messages}
-    if system_text:
-        body["systemInstruction"] = {"parts": [{"text": system_text}]}
-
     response = requests.post(
-        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}",
-        headers={"Content-Type": "application/json"},
-        json=body,
+        "https://api.mistral.ai/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {MISTRAL_API_KEY}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": "mistral-large-latest",
+            "messages": messages
+        },
         timeout=60
     )
-    return response.json()["candidates"][0]["content"]["parts"][0]["text"]
+    return response.json()["choices"][0]["message"]["content"]
 
 
 # ===== ОБЫЧНЫЙ БОТ =====
